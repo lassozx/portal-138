@@ -1,0 +1,174 @@
+const express = require('express')
+const { z } = require('zod')
+const prisma = require('../config/prisma')
+const { authenticateToken, authorizeRoles } = require('../middlewares/auth')
+
+const router = express.Router()
+
+const commentSchema = z.object({
+  content: z
+    .string()
+    .trim()
+    .min(1, 'O comentário não pode estar vazio.')
+    .max(2000, 'O comentário deve ter no máximo 2000 caracteres.'),
+  postId: z.string().uuid('O ID da notícia é inválido.'),
+})
+
+// Listar comentários de uma notícia publicada
+router.get('/post/:postId', async (req, res) => {
+  try {
+    const { postId } = req.params
+
+    if (!z.string().uuid().safeParse(postId).success) {
+      return res.status(400).json({
+        message: 'O ID da notícia é inválido.',
+      })
+    }
+
+    const post = await prisma.post.findFirst({
+      where: {
+        id: postId,
+        status: 'PUBLISHED',
+        publishedAt: { lte: new Date() },
+      },
+    })
+
+    if (!post) {
+      return res.status(404).json({
+        message: 'Notícia não encontrada.',
+      })
+    }
+
+    const comments = await prisma.comment.findMany({
+      where: { postId },
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    return res.json(comments)
+  } catch (error) {
+    console.error('Erro ao listar comentários:', error.message)
+
+    return res.status(500).json({
+      message: 'Erro interno ao listar comentários.',
+    })
+  }
+})
+
+// Criar comentário (usuário autenticado)
+router.post(
+  '/',
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const validation = commentSchema.safeParse(req.body)
+
+      if (!validation.success) {
+        return res.status(400).json({
+          message: 'Dados do comentário inválidos.',
+          errors: validation.error.issues,
+        })
+      }
+
+      const { content, postId } = validation.data
+
+      const post = await prisma.post.findFirst({
+        where: {
+          id: postId,
+          status: 'PUBLISHED',
+          publishedAt: { lte: new Date() },
+        },
+      })
+
+      if (!post) {
+        return res.status(404).json({
+          message: 'Notícia não encontrada ou não publicada.',
+        })
+      }
+
+      const comment = await prisma.comment.create({
+        data: {
+          content,
+          postId,
+          authorId: req.user.id,
+        },
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      })
+
+      return res.status(201).json({
+        message: 'Comentário criado com sucesso.',
+        comment,
+      })
+    } catch (error) {
+      console.error('Erro ao criar comentário:', error.message)
+
+      return res.status(500).json({
+        message: 'Erro interno ao criar comentário.',
+      })
+    }
+  }
+)
+
+// Excluir comentário (somente ADMIN)
+router.delete(
+  '/:id',
+  authenticateToken,
+  authorizeRoles('ADMIN'),
+  async (req, res) => {
+    try {
+      const { id } = req.params
+
+      if (!z.string().uuid().safeParse(id).success) {
+        return res.status(400).json({
+          message: 'O ID do comentário é inválido.',
+        })
+      }
+
+      const comment = await prisma.comment.findUnique({
+        where: { id },
+      })
+
+      if (!comment) {
+        return res.status(404).json({
+          message: 'Comentário não encontrado.',
+        })
+      }
+
+      await prisma.comment.delete({
+        where: { id },
+      })
+
+      return res.json({
+        message: 'Comentário excluído com sucesso.',
+      })
+    } catch (error) {
+      console.error('Erro ao excluir comentário:', error.message)
+
+      return res.status(500).json({
+        message: 'Erro interno ao excluir comentário.',
+      })
+    }
+  }
+)
+
+module.exports = router
