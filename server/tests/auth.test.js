@@ -192,3 +192,52 @@ describe('POST /api/auth/login', () => {
     expect(prisma.user.findUnique).not.toHaveBeenCalled()
   })
 })
+
+describe('GET /api/auth/me', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    process.env.JWT_SECRET = 'segredo-de-teste-jwt'
+  })
+
+  it('deve retornar os dados do usuário autenticado', async () => {
+    const token = jwt.sign(
+      { userId: 'usuario-teste-id' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'usuario-teste-id',
+      name: 'Usuario Teste',
+      email: 'usuario@exemplo.com',
+      role: 'USER',
+    })
+
+    const response = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(response.status).toBe(200)
+    expect(response.body.user).toEqual({
+      id: 'usuario-teste-id',
+      name: 'Usuario Teste',
+      email: 'usuario@exemplo.com',
+      role: 'USER',
+    })
+  })
+
+  it('deve rejeitar uma requisição sem token', async () => {
+    const response = await request(app)
+      .get('/api/auth/me')
+
+    expect(response.status).toBe(401)
+  })
+
+  it('deve rejeitar um token inválido', async () => {
+    const response = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', 'Bearer token-invalido')
+
+    expect(response.status).toBe(401)
+  })
+})
