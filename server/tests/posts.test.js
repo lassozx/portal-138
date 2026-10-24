@@ -3,6 +3,16 @@ jest.mock('../src/config/prisma', () => ({
     findMany: jest.fn(),
     count: jest.fn(),
     findFirst: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  user: {
+    findUnique: jest.fn(),
+  },
+  category: {
+    findUnique: jest.fn(),
   },
   $transaction: jest.fn(),
 }))
@@ -109,5 +119,155 @@ describe('GET /api/posts/:slug', () => {
 
     expect(response.status).toBe(404)
     expect(response.body.message).toBe('Notícia não encontrada.')
+  })
+})
+
+describe('POST /api/posts', () => {
+  let tokenAdmin
+  let tokenUser
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+
+    process.env.JWT_SECRET = 'segredo-de-teste-jwt'
+
+    const jwt = require('jsonwebtoken')
+
+    tokenAdmin = jwt.sign(
+      { userId: 'admin-teste-id' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+
+    tokenUser = jwt.sign(
+      { userId: 'user-teste-id' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+  })
+
+  it('deve rejeitar uma criação sem token', async () => {
+    const response = await request(app)
+      .post('/api/posts')
+      .send({
+        title: 'Nova notícia',
+        slug: 'nova-noticia',
+        content: 'Conteúdo da notícia.',
+      })
+
+    expect(response.status).toBe(401)
+    expect(prisma.post.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('deve rejeitar um usuário comum', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'user-teste-id',
+      name: 'Usuário Teste',
+      email: 'usuario@exemplo.com',
+      role: 'USER',
+    })
+
+    const response = await request(app)
+      .post('/api/posts')
+      .set('Authorization', `Bearer ${tokenUser}`)
+      .send({
+        title: 'Nova notícia',
+        slug: 'nova-noticia',
+        content: 'Conteúdo da notícia.',
+      })
+
+    expect(response.status).toBe(403)
+    expect(response.body.message).toBe(
+      'Você não tem permissão para realizar esta ação.'
+    )
+    expect(prisma.post.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('deve rejeitar dados obrigatórios ausentes', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'admin-teste-id',
+      name: 'Administrador Teste',
+      email: 'admin@exemplo.com',
+      role: 'ADMIN',
+    })
+
+    const response = await request(app)
+      .post('/api/posts')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({
+        title: 'Notícia sem conteúdo',
+      })
+
+    expect(response.status).toBe(400)
+    expect(response.body.message).toBe(
+      'Título, slug e conteúdo são obrigatórios.'
+    )
+    expect(prisma.post.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('deve rejeitar um slug já existente', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'admin-teste-id',
+      name: 'Administrador Teste',
+      email: 'admin@exemplo.com',
+      role: 'ADMIN',
+    })
+
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'noticia-existente-id',
+      slug: 'noticia-existente',
+    })
+
+    const response = await request(app)
+      .post('/api/posts')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({
+        title: 'Notícia duplicada',
+        slug: 'noticia-existente',
+        content: 'Conteúdo de teste.',
+      })
+
+    expect(response.status).toBe(409)
+    expect(response.body.message).toBe(
+      'Já existe uma notícia com esse slug.'
+    )
+    expect(prisma.post.create).not.toHaveBeenCalled()
+  })
+
+  it('deve criar uma notícia como rascunho para um administrador', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'admin-teste-id',
+      name: 'Administrador Teste',
+      email: 'admin@exemplo.com',
+      role: 'ADMIN',
+    })
+
+    prisma.post.findUnique.mockResolvedValue(null)
+
+    prisma.post.create = jest.fn().mockImplementation(async ({ data }) => ({
+      id: 'nova-noticia-id',
+      ...data,
+    }))
+
+    const response = await request(app)
+      .post('/api/posts')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({
+        title: 'Nova notícia',
+        slug: 'nova-noticia',
+        content: 'Conteúdo da notícia.',
+      })
+
+    expect(response.status).toBe(201)
+    expect(response.body.message).toBe(
+      'Notícia criada como rascunho.'
+    )
+    expect(response.body.post).toMatchObject({
+      id: 'nova-noticia-id',
+      title: 'Nova notícia',
+      slug: 'nova-noticia',
+      status: 'DRAFT',
+      authorId: 'admin-teste-id',
+    })
   })
 })
