@@ -4,6 +4,202 @@ const { authenticateToken, authorizeRoles } = require('../middlewares/auth')
 
 const router = express.Router()
 
+
+/**
+ * @swagger
+ * tags:
+ *   name: Notícias
+ *   description: Consulta e gerenciamento de notícias
+ */
+
+/**
+ * @swagger
+ * /api/posts:
+ *   get:
+ *     summary: Listar notícias publicadas
+ *     tags: [Notícias]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *         description: Quantidade de notícias por página
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Buscar pelo título
+ *       - in: query
+ *         name: categoryId
+ *         schema:
+ *           type: string
+ *         description: Filtrar pelo ID da categoria
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [latest, oldest]
+ *           default: latest
+ *         description: Ordenação por data
+ *     responses:
+ *       200:
+ *         description: Lista paginada de notícias
+ *       400:
+ *         description: Parâmetros inválidos
+ *       500:
+ *         description: Erro interno
+ *
+ * /api/posts/{slug}:
+ *   get:
+ *     summary: Buscar notícia publicada pelo slug
+ *     tags: [Notícias]
+ *     parameters:
+ *       - in: path
+ *         name: slug
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Identificador textual da notícia
+ *     responses:
+ *       200:
+ *         description: Notícia encontrada
+ *       404:
+ *         description: Notícia não encontrada
+ *       500:
+ *         description: Erro interno
+ */
+
+/**
+ * @swagger
+ * /api/posts:
+ *   post:
+ *     summary: Criar notícia como rascunho
+ *     tags: [Notícias]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, slug, content]
+ *             properties:
+ *               title:
+ *                 type: string
+ *               slug:
+ *                 type: string
+ *               excerpt:
+ *                 type: string
+ *                 nullable: true
+ *               content:
+ *                 type: string
+ *               coverImage:
+ *                 type: string
+ *                 nullable: true
+ *               categoryId:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       201:
+ *         description: Notícia criada como rascunho
+ *       400:
+ *         description: Dados inválidos ou categoria inexistente
+ *       401:
+ *         description: Token ausente ou inválido
+ *       403:
+ *         description: Permissão insuficiente
+ *       409:
+ *         description: Slug já existente
+ *       500:
+ *         description: Erro interno
+ *
+ * /api/posts/{id}:
+ *   put:
+ *     summary: Editar notícia
+ *     tags: [Notícias]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da notícia
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               slug:
+ *                 type: string
+ *               excerpt:
+ *                 type: string
+ *                 nullable: true
+ *               content:
+ *                 type: string
+ *               coverImage:
+ *                 type: string
+ *                 nullable: true
+ *               categoryId:
+ *                 type: string
+ *                 nullable: true
+ *               status:
+ *                 type: string
+ *                 enum: [DRAFT, PUBLISHED, ARCHIVED]
+ *     responses:
+ *       200:
+ *         description: Notícia atualizada
+ *       400:
+ *         description: Dados inválidos ou categoria inexistente
+ *       401:
+ *         description: Token ausente ou inválido
+ *       403:
+ *         description: Permissão insuficiente
+ *       404:
+ *         description: Notícia não encontrada
+ *       409:
+ *         description: Slug já utilizado
+ *       500:
+ *         description: Erro interno
+ *
+ *   delete:
+ *     summary: Excluir notícia
+ *     tags: [Notícias]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da notícia
+ *     responses:
+ *       200:
+ *         description: Notícia excluída
+ *       401:
+ *         description: Token ausente ou inválido
+ *       403:
+ *         description: Apenas administradores podem excluir notícias
+ *       404:
+ *         description: Notícia não encontrada
+ *       500:
+ *         description: Erro interno
+ */
+
 // Listar notícias publicadas com paginação, filtros e ordenação
 router.get('/', async (req, res) => {
   try {

@@ -18,6 +18,137 @@ const categorySchema = z.object({
   description: z.string().trim().optional().nullable(),
 })
 
+
+/**
+ * @swagger
+ * tags:
+ *   name: Categorias
+ *   description: Consulta e gerenciamento de categorias de notícias
+ */
+
+/**
+ * @swagger
+ * /api/categories:
+ *   get:
+ *     summary: Listar categorias
+ *     tags: [Categorias]
+ *     responses:
+ *       200:
+ *         description: Lista de categorias com contagem de notícias
+ *       500:
+ *         description: Erro interno
+ *
+ *   post:
+ *     summary: Criar categoria
+ *     tags: [Categorias]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, slug]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *               slug:
+ *                 type: string
+ *                 minLength: 2
+ *                 pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       201:
+ *         description: Categoria criada
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Token ausente ou inválido
+ *       403:
+ *         description: Permissão insuficiente
+ *       409:
+ *         description: Nome ou slug já existente
+ *       500:
+ *         description: Erro interno
+ *
+ * /api/categories/{id}:
+ *   put:
+ *     summary: Atualizar categoria
+ *     tags: [Categorias]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da categoria
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             minProperties: 1
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *               slug:
+ *                 type: string
+ *                 minLength: 2
+ *                 pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+ *               description:
+ *                 type: string
+ *                 nullable: true
+ *     responses:
+ *       200:
+ *         description: Categoria atualizada
+ *       400:
+ *         description: Dados inválidos ou nenhum campo informado
+ *       401:
+ *         description: Token ausente ou inválido
+ *       403:
+ *         description: Permissão insuficiente
+ *       404:
+ *         description: Categoria não encontrada
+ *       409:
+ *         description: Nome ou slug já existente
+ *       500:
+ *         description: Erro interno
+ *
+ *   delete:
+ *     summary: Excluir categoria
+ *     tags: [Categorias]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da categoria
+ *     responses:
+ *       200:
+ *         description: Categoria excluída
+ *       401:
+ *         description: Token ausente ou inválido
+ *       403:
+ *         description: Apenas administradores podem excluir categorias
+ *       404:
+ *         description: Categoria não encontrada
+ *       409:
+ *         description: Categoria possui notícias vinculadas
+ *       500:
+ *         description: Erro interno
+ */
+
 // Listar categorias (público)
 router.get('/', async (req, res) => {
   try {

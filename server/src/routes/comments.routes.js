@@ -14,6 +14,102 @@ const commentSchema = z.object({
   postId: z.string().uuid('O ID da notícia é inválido.'),
 })
 
+
+/**
+ * @swagger
+ * tags:
+ *   name: Comentários
+ *   description: Consulta e gerenciamento de comentários das notícias
+ */
+
+/**
+ * @swagger
+ * /api/comments/post/{postId}:
+ *   get:
+ *     summary: Listar comentários de uma notícia publicada
+ *     tags: [Comentários]
+ *     parameters:
+ *       - in: path
+ *         name: postId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID da notícia
+ *     responses:
+ *       200:
+ *         description: Lista de comentários, do mais recente ao mais antigo
+ *       400:
+ *         description: ID da notícia inválido
+ *       404:
+ *         description: Notícia não encontrada ou não publicada
+ *       500:
+ *         description: Erro interno
+ *
+ * /api/comments:
+ *   post:
+ *     summary: Criar comentário em uma notícia publicada
+ *     tags: [Comentários]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [content, postId]
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 minLength: 1
+ *                 maxLength: 2000
+ *                 example: Excelente notícia!
+ *               postId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID da notícia publicada
+ *     responses:
+ *       201:
+ *         description: Comentário criado
+ *       400:
+ *         description: Conteúdo ou ID da notícia inválido
+ *       401:
+ *         description: Token ausente ou inválido
+ *       404:
+ *         description: Notícia não encontrada ou não publicada
+ *       500:
+ *         description: Erro interno
+ *
+ * /api/comments/{id}:
+ *   delete:
+ *     summary: Excluir comentário próprio ou como administrador
+ *     tags: [Comentários]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do comentário
+ *     responses:
+ *       200:
+ *         description: Comentário excluído
+ *       400:
+ *         description: ID do comentário inválido
+ *       401:
+ *         description: Token ausente ou inválido
+ *       403:
+ *         description: Usuário não é autor nem administrador
+ *       404:
+ *         description: Comentário não encontrado
+ *       500:
+ *         description: Erro interno
+ */
+
 // Listar comentários de uma notícia publicada
 router.get('/post/:postId', async (req, res) => {
   try {

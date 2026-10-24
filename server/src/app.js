@@ -6,11 +6,15 @@ const authRoutes = require('./routes/auth.routes')
 const categoriesRoutes = require('./routes/categories.routes')
 const commentsRoutes = require('./routes/comments.routes')
 const errorHandler = require('./middlewares/errorHandler')
+const swaggerUi = require('swagger-ui-express')
+const swaggerSpec = require('./config/swagger')
 
 const app = express()
 
 app.use(cors())
 app.use(express.json())
+// Documentação interativa da API
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 // Verifica se a API está funcionando
 app.get('/api/health', (req, res) => {
