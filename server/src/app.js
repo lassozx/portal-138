@@ -5,6 +5,7 @@ const postsRoutes = require('./routes/posts.routes')
 const authRoutes = require('./routes/auth.routes')
 const categoriesRoutes = require('./routes/categories.routes')
 const commentsRoutes = require('./routes/comments.routes')
+const errorHandler = require('./middlewares/errorHandler')
 
 const app = express()
 
@@ -46,5 +47,6 @@ app.use('/api/auth', authRoutes)
 app.use('/api/posts', postsRoutes)
 app.use('/api/categories', categoriesRoutes)
 app.use('/api/comments', commentsRoutes)
+app.use(errorHandler)
 
 module.exports = app
