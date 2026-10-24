@@ -31,6 +31,7 @@ router.get('/post/:postId', async (req, res) => {
         status: 'PUBLISHED',
         publishedAt: { lte: new Date() },
       },
+      select: { id: true },
     })
 
     if (!post) {
@@ -65,110 +66,115 @@ router.get('/post/:postId', async (req, res) => {
   }
 })
 
-// Criar comentário (usuário autenticado)
-router.post(
-  '/',
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const validation = commentSchema.safeParse(req.body)
+// Criar comentário: usuário autenticado
+router.post('/', authenticateToken, async (req, res) => {
+  try {
+    const validation = commentSchema.safeParse(req.body)
 
-      if (!validation.success) {
-        return res.status(400).json({
-          message: 'Dados do comentário inválidos.',
-          errors: validation.error.issues,
-        })
-      }
-
-      const { content, postId } = validation.data
-
-      const post = await prisma.post.findFirst({
-        where: {
-          id: postId,
-          status: 'PUBLISHED',
-          publishedAt: { lte: new Date() },
-        },
+    if (!validation.success) {
+      return res.status(400).json({
+        message: 'Dados do comentário inválidos.',
+        errors: validation.error.issues,
       })
+    }
 
-      if (!post) {
-        return res.status(404).json({
-          message: 'Notícia não encontrada ou não publicada.',
-        })
-      }
+    const { content, postId } = validation.data
 
-      const comment = await prisma.comment.create({
-        data: {
-          content,
-          postId,
-          authorId: req.user.id,
-        },
-        select: {
-          id: true,
-          content: true,
-          createdAt: true,
-          author: {
-            select: {
-              id: true,
-              name: true,
-            },
+    const post = await prisma.post.findFirst({
+      where: {
+        id: postId,
+        status: 'PUBLISHED',
+        publishedAt: { lte: new Date() },
+      },
+      select: { id: true },
+    })
+
+    if (!post) {
+      return res.status(404).json({
+        message: 'Notícia não encontrada ou não publicada.',
+      })
+    }
+
+    const comment = await prisma.comment.create({
+      data: {
+        content,
+        postId,
+        authorId: req.user.id,
+      },
+      select: {
+        id: true,
+        content: true,
+        createdAt: true,
+        author: {
+          select: {
+            id: true,
+            name: true,
           },
         },
-      })
+      },
+    })
 
-      return res.status(201).json({
-        message: 'Comentário criado com sucesso.',
-        comment,
-      })
-    } catch (error) {
-      console.error('Erro ao criar comentário:', error.message)
+    return res.status(201).json({
+      message: 'Comentário criado com sucesso.',
+      comment,
+    })
+  } catch (error) {
+    console.error('Erro ao criar comentário:', error.message)
 
-      return res.status(500).json({
-        message: 'Erro interno ao criar comentário.',
+    return res.status(500).json({
+      message: 'Erro interno ao criar comentário.',
+    })
+  }
+})
+
+// Excluir comentário: autor ou administrador
+router.delete('/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params
+
+    if (!z.string().uuid().safeParse(id).success) {
+      return res.status(400).json({
+        message: 'O ID do comentário é inválido.',
       })
     }
-  }
-)
 
-// Excluir comentário (somente ADMIN)
-router.delete(
-  '/:id',
-  authenticateToken,
-  authorizeRoles('ADMIN'),
-  async (req, res) => {
-    try {
-      const { id } = req.params
+    const comment = await prisma.comment.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        authorId: true,
+      },
+    })
 
-      if (!z.string().uuid().safeParse(id).success) {
-        return res.status(400).json({
-          message: 'O ID do comentário é inválido.',
-        })
-      }
-
-      const comment = await prisma.comment.findUnique({
-        where: { id },
-      })
-
-      if (!comment) {
-        return res.status(404).json({
-          message: 'Comentário não encontrado.',
-        })
-      }
-
-      await prisma.comment.delete({
-        where: { id },
-      })
-
-      return res.json({
-        message: 'Comentário excluído com sucesso.',
-      })
-    } catch (error) {
-      console.error('Erro ao excluir comentário:', error.message)
-
-      return res.status(500).json({
-        message: 'Erro interno ao excluir comentário.',
+    if (!comment) {
+      return res.status(404).json({
+        message: 'Comentário não encontrado.',
       })
     }
+
+    const isAuthor = comment.authorId === req.user.id
+    const isAdmin = req.user.role === 'ADMIN'
+
+    if (!isAuthor && !isAdmin) {
+      return res.status(403).json({
+        message: 'Você só pode excluir seus próprios comentários.',
+      })
+    }
+
+    await prisma.comment.delete({
+      where: { id },
+    })
+
+    return res.json({
+      message: 'Comentário excluído com sucesso.',
+    })
+  } catch (error) {
+    console.error('Erro ao excluir comentário:', error.message)
+
+    return res.status(500).json({
+      message: 'Erro interno ao excluir comentário.',
+    })
   }
-)
+})
 
 module.exports = router
