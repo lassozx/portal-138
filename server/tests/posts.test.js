@@ -271,3 +271,131 @@ describe('POST /api/posts', () => {
     })
   })
 })
+
+describe('PUT /api/posts/:id', () => {
+  let tokenAdmin
+  let tokenEditor
+  let tokenUser
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    process.env.JWT_SECRET = 'segredo-de-teste-jwt'
+
+    const jwt = require('jsonwebtoken')
+
+    tokenAdmin = jwt.sign(
+      { userId: 'admin-teste-id' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+
+    tokenEditor = jwt.sign(
+      { userId: 'editor-teste-id' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+
+    tokenUser = jwt.sign(
+      { userId: 'user-teste-id' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+  })
+
+  it('deve rejeitar uma edição sem token', async () => {
+    const response = await request(app)
+      .put('/api/posts/post-teste-id')
+      .send({ title: 'Título atualizado' })
+
+    expect(response.status).toBe(401)
+  })
+
+  it('deve rejeitar um usuário comum', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'user-teste-id',
+      name: 'Usuário Teste',
+      email: 'usuario@exemplo.com',
+      role: 'USER',
+    })
+
+    const response = await request(app)
+      .put('/api/posts/post-teste-id')
+      .set('Authorization', `Bearer ${tokenUser}`)
+      .send({ title: 'Título atualizado' })
+
+    expect(response.status).toBe(403)
+    expect(prisma.post.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('deve retornar 404 quando a notícia não existe', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'admin-teste-id',
+      name: 'Administrador Teste',
+      email: 'admin@exemplo.com',
+      role: 'ADMIN',
+    })
+
+    prisma.post.findUnique.mockResolvedValue(null)
+
+    const response = await request(app)
+      .put('/api/posts/post-inexistente')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ title: 'Título atualizado' })
+
+    expect(response.status).toBe(404)
+    expect(response.body.message).toBe('Notícia não encontrada.')
+  })
+
+  it('deve rejeitar um status inválido', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'admin-teste-id',
+      name: 'Administrador Teste',
+      email: 'admin@exemplo.com',
+      role: 'ADMIN',
+    })
+
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'post-teste-id',
+      publishedAt: null,
+    })
+
+    const response = await request(app)
+      .put('/api/posts/post-teste-id')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({ status: 'INVALIDO' })
+
+    expect(response.status).toBe(400)
+    expect(response.body.message).toBe('Status inválido.')
+    expect(prisma.post.update).not.toHaveBeenCalled()
+  })
+
+  it('deve permitir que um editor atualize uma notícia', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'editor-teste-id',
+      name: 'Editor Teste',
+      email: 'editor@exemplo.com',
+      role: 'EDITOR',
+    })
+
+    prisma.post.findUnique.mockResolvedValue({
+      id: 'post-teste-id',
+      publishedAt: null,
+    })
+
+    prisma.post.update.mockImplementation(async ({ data }) => ({
+      id: 'post-teste-id',
+      title: data.title,
+    }))
+
+    const response = await request(app)
+      .put('/api/posts/post-teste-id')
+      .set('Authorization', `Bearer ${tokenEditor}`)
+      .send({ title: 'Título atualizado' })
+
+    expect(response.status).toBe(200)
+    expect(response.body.message).toBe(
+      'Notícia atualizada com sucesso.'
+    )
+    expect(response.body.post.title).toBe('Título atualizado')
+  })
+})
