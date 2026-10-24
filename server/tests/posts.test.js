@@ -18,6 +18,7 @@ jest.mock('../src/config/prisma', () => ({
 }))
 
 const request = require('supertest')
+const jwt = require('jsonwebtoken')
 const app = require('../src/app')
 const prisma = require('../src/config/prisma')
 
@@ -397,5 +398,97 @@ describe('PUT /api/posts/:id', () => {
       'Notícia atualizada com sucesso.'
     )
     expect(response.body.post.title).toBe('Título atualizado')
+  })
+})
+
+describe('DELETE /api/posts/:id', () => {
+  const postId = '12016fa1-cb26-4d8d-8e4d-bfead4dbfbce'
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('deve retornar 401 quando não houver token', async () => {
+    const response = await request(app).delete(`/api/posts/${postId}`)
+
+    expect(response.status).toBe(401)
+    expect(response.body).toHaveProperty('message')
+  })
+
+  it('deve retornar 403 quando um usuário comum tentar excluir uma notícia', async () => {
+    const token = jwt.sign(
+      { userId: 'usuario-comum-id' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'usuario-comum-id',
+      name: 'Usuário Comum',
+      email: 'usuario@teste.com',
+      role: 'USER',
+    })
+
+    const response = await request(app)
+      .delete(`/api/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(response.status).toBe(403)
+    expect(response.body).toHaveProperty('message')
+  })
+
+  it('deve retornar 404 quando a notícia não existir', async () => {
+    const token = jwt.sign(
+      { userId: 'admin-id' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'admin-id',
+      name: 'Administrador',
+      email: 'admin@teste.com',
+      role: 'ADMIN',
+    })
+
+    prisma.post.findUnique.mockResolvedValue(null)
+
+    const response = await request(app)
+      .delete(`/api/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(response.status).toBe(404)
+  })
+
+  it('deve permitir que um administrador exclua uma notícia existente', async () => {
+    const token = jwt.sign(
+      { userId: 'admin-id' },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'admin-id',
+      name: 'Administrador',
+      email: 'admin@teste.com',
+      role: 'ADMIN',
+    })
+
+    prisma.post.findUnique.mockResolvedValue({
+      id: postId,
+      title: 'Notícia de teste',
+    })
+
+    prisma.post.delete.mockResolvedValue({
+      id: postId,
+      title: 'Notícia de teste',
+    })
+
+    const response = await request(app)
+      .delete(`/api/posts/${postId}`)
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(response.status).toBe(200)
+    expect(prisma.post.delete).toHaveBeenCalled()
   })
 })
