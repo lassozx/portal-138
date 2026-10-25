@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react'
+import Login from './Login.jsx'
+import AdminPanel from './AdminPanel.jsx'
 
 function App() {
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [view, setView] = useState('public')
+  const [session, setSession] = useState(null)
 
   useEffect(() => {
     async function loadPosts() {
@@ -55,6 +59,32 @@ function App() {
     }).format(new Date(date))
   }
 
+  if (view === 'login') {
+    return (
+      <Login
+        onLogin={(newSession) => {
+          setSession(newSession)
+          setView('admin')
+        }}
+        onBack={() => setView('public')}
+      />
+    )
+  }
+
+  if (view === 'admin' && session) {
+    return (
+      <AdminPanel
+        token={session.token}
+        user={session.user}
+        onLogout={() => {
+          setSession(null)
+          setView('public')
+        }}
+        onBack={() => setView('public')}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen bg-white text-slate-900">
       {/* Barra superior */}
@@ -95,12 +125,21 @@ function App() {
             </a>
           </nav>
 
-          <a
-            href="#noticias"
-            className="rounded-lg bg-red-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-red-800"
-          >
-            Explorar
-          </a>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setView(session ? 'admin' : 'login')}
+              className="rounded-lg border border-red-700 px-3 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-50 sm:px-4"
+            >
+              {session ? 'Painel' : 'Entrar'}
+            </button>
+            <a
+              href="#noticias"
+              className="rounded-lg bg-red-700 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-red-800 sm:px-4"
+            >
+              Explorar
+            </a>
+          </div>
         </div>
       </header>
 

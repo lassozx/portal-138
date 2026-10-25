@@ -341,6 +341,48 @@ router.get('/', async (req, res) => {
 })
 
 // Buscar uma notícia publicada pelo slug
+// Listar todas as notícias para o painel administrativo
+router.get(
+  '/admin',
+  authenticateToken,
+  authorizeRoles('ADMIN', 'EDITOR'),
+  async (req, res) => {
+    try {
+      const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1)
+      const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 100))
+      const skip = (page - 1) * limit
+
+      const [posts, total] = await Promise.all([
+        prisma.post.findMany({
+          skip,
+          take: limit,
+          orderBy: { updatedAt: 'desc' },
+          include: {
+            author: { select: { id: true, name: true } },
+            category: true,
+          },
+        }),
+        prisma.post.count(),
+      ])
+
+      return res.json({
+        data: posts,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      })
+    } catch (error) {
+      console.error('Erro ao listar notícias administrativas:', error)
+      return res.status(500).json({
+        message: 'Erro interno ao listar notícias.',
+      })
+    }
+  },
+)
+
 router.get('/:slug', async (req, res) => {
   try {
     const { slug } = req.params
