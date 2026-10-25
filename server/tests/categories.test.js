@@ -48,6 +48,20 @@ describe('GET /api/categories', () => {
     expect(response.status).toBe(200)
     expect(response.body).toEqual([])
   })
+
+  it('deve retornar 500 quando ocorrer um erro ao listar categorias', async () => {
+  prisma.category.findMany.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app).get('/api/categories')
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao listar categorias.'
+  )
+})
+
 })
 
 describe('POST /api/categories', () => {
@@ -165,6 +179,29 @@ describe('POST /api/categories', () => {
     expect(response.body.category.name).toBe('Eventos')
     expect(prisma.category.create).toHaveBeenCalled()
   })
+
+    it('deve retornar 500 quando ocorrer um erro ao cadastrar categoria', async () => {
+  mockAdmin()
+
+  prisma.category.findFirst.mockResolvedValue(null)
+  prisma.category.create.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .post('/api/categories')
+    .set('Authorization', `Bearer ${createToken()}`)
+    .send({
+      name: 'Eventos',
+      slug: 'eventos',
+    })
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao cadastrar categoria.'
+  )
+})
+
 })
 
 describe('PUT /api/categories/:id', () => {
@@ -254,6 +291,33 @@ describe('PUT /api/categories/:id', () => {
     expect(response.body.category.name).toBe('Eventos atualizados')
     expect(prisma.category.update).toHaveBeenCalled()
   })
+
+  it('deve retornar 500 quando ocorrer um erro ao atualizar categoria', async () => {
+  mockAdmin()
+
+  prisma.category.findUnique.mockResolvedValue({
+    id: categoryId,
+    name: 'Eventos',
+    slug: 'eventos',
+  })
+
+  prisma.category.findFirst.mockResolvedValue(null)
+
+  prisma.category.update.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .put(`/api/categories/${categoryId}`)
+    .set('Authorization', `Bearer ${createToken()}`)
+    .send({ name: 'Eventos atualizados' })
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao editar categoria.'
+  )
+})
+
 })
 
 describe('DELETE /api/categories/:id', () => {
@@ -358,4 +422,31 @@ describe('DELETE /api/categories/:id', () => {
       where: { id: categoryId },
     })
   })
+
+  it('deve retornar 500 quando ocorrer um erro ao excluir categoria', async () => {
+  mockUser()
+
+  prisma.category.findUnique.mockResolvedValue({
+    id: categoryId,
+    name: 'Eventos',
+    slug: 'eventos',
+    _count: {
+      posts: 0,
+    },
+  })
+
+  prisma.category.delete.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .delete(`/api/categories/${categoryId}`)
+    .set('Authorization', `Bearer ${createToken()}`)
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao excluir categoria.'
+  )
+})
+
 })
