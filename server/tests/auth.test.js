@@ -6,6 +6,10 @@ jest.mock('../src/config/prisma', () => ({
   },
 }))
 
+jest.mock('../src/middlewares/rateLimit', () => ({
+  authLimiter: (req, res, next) => next(),
+}))
+
 jest.mock('bcryptjs', () => ({
   hash: jest.fn(),
   compare: jest.fn(),
@@ -81,6 +85,28 @@ describe('POST /api/auth/register', () => {
     expect(prisma.user.create).not.toHaveBeenCalled()
   })
 
+  it('deve retornar 409 quando o banco detectar um e-mail duplicado', async () => {
+  prisma.user.findUnique.mockResolvedValue(null)
+
+  prisma.user.create.mockRejectedValue({
+    code: 'P2002',
+    message: 'Unique constraint failed',
+  })
+
+  const response = await request(app)
+    .post('/api/auth/register')
+    .send({
+      name: 'Usuario Teste',
+      email: 'duplicado@exemplo.com',
+      password: 'SenhaSegura123',
+    })
+
+  expect(response.status).toBe(409)
+  expect(response.body.message).toBe(
+    'Este e-mail já está cadastrado.'
+  )
+})
+
   it('deve rejeitar dados inválidos no cadastro', async () => {
     const response = await request(app)
       .post('/api/auth/register')
@@ -94,6 +120,27 @@ describe('POST /api/auth/register', () => {
     expect(prisma.user.findUnique).not.toHaveBeenCalled()
     expect(prisma.user.create).not.toHaveBeenCalled()
   })
+
+  it('deve retornar 500 quando ocorrer um erro inesperado no cadastro', async () => {
+  prisma.user.findUnique.mockResolvedValue(null)
+  prisma.user.create.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .post('/api/auth/register')
+    .send({
+      name: 'Usuario Teste',
+      email: 'novo@exemplo.com',
+      password: 'SenhaSegura123',
+    })
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao cadastrar usuário.'
+  )
+})
+
 })
 
 describe('POST /api/auth/login', () => {
@@ -141,6 +188,50 @@ describe('POST /api/auth/login', () => {
       where: { email: 'usuario@exemplo.com' },
     })
   })
+
+  it('deve usar expiração padrão de 1 hora quando JWT_EXPIRES_IN não estiver definido', async () => {
+  const originalExpiresIn = process.env.JWT_EXPIRES_IN
+  delete process.env.JWT_EXPIRES_IN
+
+  try {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'usuario-teste-id',
+      name: 'Usuario Teste',
+      email: 'usuario@exemplo.com',
+      passwordHash: 'hash-de-senha',
+      role: 'USER',
+    })
+    bcrypt.compare.mockResolvedValue(true)
+
+    const antes = Math.floor(Date.now() / 1000)
+
+    const response = await request(app)
+      .post('/api/auth/login')
+      .send({
+        email: 'usuario@exemplo.com',
+        password: 'SenhaSegura123',
+      })
+
+    const depois = Math.floor(Date.now() / 1000)
+
+    expect(response.status).toBe(200)
+
+    const decoded = jwt.verify(
+      response.body.token,
+      process.env.JWT_SECRET
+    )
+
+    expect(decoded.exp - decoded.iat).toBe(3600)
+    expect(decoded.iat).toBeGreaterThanOrEqual(antes)
+    expect(decoded.iat).toBeLessThanOrEqual(depois)
+  } finally {
+    if (originalExpiresIn === undefined) {
+      delete process.env.JWT_EXPIRES_IN
+    } else {
+      process.env.JWT_EXPIRES_IN = originalExpiresIn
+    }
+  }
+})
 
   it('deve rejeitar uma senha incorreta', async () => {
     prisma.user.findUnique.mockResolvedValue({
@@ -192,6 +283,25 @@ describe('POST /api/auth/login', () => {
     )
     expect(prisma.user.findUnique).not.toHaveBeenCalled()
   })
+
+  it('deve retornar 500 quando ocorrer um erro inesperado no login', async () => {
+  prisma.user.findUnique.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .post('/api/auth/login')
+    .send({
+      email: 'usuario@exemplo.com',
+      password: 'SenhaSegura123',
+    })
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao realizar login.'
+  )
+})
+
 })
 
 describe('GET /api/auth/me', () => {
@@ -332,6 +442,22 @@ describe('PUT /api/auth/profile', () => {
       }),
     )
   })
+
+  it('deve retornar 500 quando ocorrer um erro inesperado ao atualizar o perfil', async () => {
+  prisma.user.update.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .put('/api/auth/profile')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ name: 'Nome Atualizado' })
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao atualizar perfil.'
+  )
+})
 
   it('deve rejeitar uma atualização sem campos', async () => {
     const response = await request(app)
