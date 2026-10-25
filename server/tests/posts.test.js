@@ -54,6 +54,32 @@ describe('GET /api/posts', () => {
     expect(prisma.$transaction).toHaveBeenCalledTimes(1)
   })
 
+  it('deve filtrar notícias por busca e categoria com ordenação antiga', async () => {
+    prisma.$transaction.mockResolvedValue([[], 0])
+
+    const response = await request(app).get(
+      '/api/posts?search=tecnologia&categoryId=categoria-1&sort=oldest'
+    )
+
+    expect(response.status).toBe(200)
+
+    expect(prisma.post.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          title: {
+            contains: 'tecnologia',
+            mode: 'insensitive',
+          },
+          categoryId: 'categoria-1',
+        }),
+        orderBy: [
+          { publishedAt: 'asc' },
+          { createdAt: 'asc' },
+        ],
+      })
+    )
+  })
+
   it('deve rejeitar uma página inválida', async () => {
     const response = await request(app).get('/api/posts?page=0')
 
@@ -80,6 +106,16 @@ describe('GET /api/posts', () => {
     )
     expect(prisma.$transaction).not.toHaveBeenCalled()
   })
+
+  it('deve retornar 500 quando ocorrer um erro ao listar notícias', async () => {
+    prisma.$transaction.mockRejectedValue(new Error('Erro no banco de dados'))
+
+    const response = await request(app).get('/api/posts')
+
+    expect(response.status).toBe(500)
+    expect(response.body.message).toBe('Erro ao buscar notícias.')
+  })
+
 })
 
 describe('GET /api/posts/:slug', () => {
@@ -121,6 +157,21 @@ describe('GET /api/posts/:slug', () => {
     expect(response.status).toBe(404)
     expect(response.body.message).toBe('Notícia não encontrada.')
   })
+
+  it('deve retornar 500 quando ocorrer um erro ao buscar uma notícia', async () => {
+  prisma.post.findFirst.mockRejectedValue(
+  new Error('Erro no banco de dados')
+)
+
+  const response = await request(app)
+    .get('/api/posts/noticia-teste')
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro ao buscar notícia.'
+  )
+})
+
 })
 
 describe('POST /api/posts', () => {
@@ -271,6 +322,63 @@ describe('POST /api/posts', () => {
       authorId: 'admin-teste-id',
     })
   })
+
+  it('deve rejeitar uma categoria inexistente', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 'admin-teste-id',
+      name: 'Administrador Teste',
+      email: 'admin@exemplo.com',
+      role: 'ADMIN',
+    })
+
+    prisma.post.findUnique.mockResolvedValue(null)
+    prisma.category.findUnique.mockResolvedValue(null)
+
+    const response = await request(app)
+      .post('/api/posts')
+      .set('Authorization', `Bearer ${tokenAdmin}`)
+      .send({
+        title: 'Notícia com categoria inválida',
+        slug: 'noticia-categoria-invalida',
+        content: 'Conteúdo de teste.',
+        categoryId: '12016fa1-cb26-4d8d-8e4d-bfead4dbfbce',
+      })
+
+    expect(response.status).toBe(400)
+    expect(response.body.message).toBe(
+      'A categoria informada não existe.'
+    )
+    expect(prisma.post.create).not.toHaveBeenCalled()
+  })
+
+  it('deve retornar 500 quando ocorrer um erro ao criar uma notícia', async () => {
+  prisma.user.findUnique.mockResolvedValue({
+    id: 'admin-teste-id',
+    name: 'Administrador Teste',
+    email: 'admin@exemplo.com',
+    role: 'ADMIN',
+  })
+
+  prisma.post.findUnique.mockResolvedValue(null)
+  prisma.post.create.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .post('/api/posts')
+    .set('Authorization', `Bearer ${tokenAdmin}`)
+    .send({
+      title: 'Notícia para teste de erro',
+      slug: 'noticia-teste-erro',
+      content: 'Conteúdo de teste.',
+    })
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao criar notícia.'
+  )
+})
+
 })
 
 describe('PUT /api/posts/:id', () => {
@@ -399,6 +507,177 @@ describe('PUT /api/posts/:id', () => {
     )
     expect(response.body.post.title).toBe('Título atualizado')
   })
+
+  it('deve definir publishedAt ao publicar uma notícia', async () => {
+  prisma.user.findUnique.mockResolvedValue({
+    id: 'editor-teste-id',
+    name: 'Editor Teste',
+    email: 'editor@exemplo.com',
+    role: 'EDITOR',
+  })
+
+  prisma.post.findUnique.mockResolvedValue({
+    id: 'post-teste-id',
+    publishedAt: null,
+  })
+
+  prisma.post.update.mockImplementation(async ({ data }) => ({
+    id: 'post-teste-id',
+    status: data.status,
+    publishedAt: data.publishedAt,
+  }))
+
+  const response = await request(app)
+    .put('/api/posts/post-teste-id')
+    .set('Authorization', `Bearer ${tokenEditor}`)
+    .send({ status: 'PUBLISHED' })
+
+  expect(response.status).toBe(200)
+  expect(response.body.post.status).toBe('PUBLISHED')
+  expect(response.body.post.publishedAt).toBeTruthy()
+
+  expect(prisma.post.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      where: { id: 'post-teste-id' },
+      data: expect.objectContaining({
+        status: 'PUBLISHED',
+        publishedAt: expect.any(Date),
+      }),
+    })
+  )
+})
+
+  it('deve preservar publishedAt ao publicar novamente uma notícia', async () => {
+  const dataPublicacao = new Date('2026-01-15T12:00:00.000Z')
+
+  prisma.user.findUnique.mockResolvedValue({
+    id: 'editor-teste-id',
+    name: 'Editor Teste',
+    email: 'editor@exemplo.com',
+    role: 'EDITOR',
+  })
+
+  prisma.post.findUnique.mockResolvedValue({
+    id: 'post-teste-id',
+    publishedAt: dataPublicacao,
+  })
+
+  prisma.post.update.mockImplementation(async ({ data }) => ({
+    id: 'post-teste-id',
+    status: data.status,
+    publishedAt: data.publishedAt,
+  }))
+
+  const response = await request(app)
+    .put('/api/posts/post-teste-id')
+    .set('Authorization', `Bearer ${tokenEditor}`)
+    .send({ status: 'PUBLISHED' })
+
+  expect(response.status).toBe(200)
+  expect(response.body.post.publishedAt).toBe(dataPublicacao.toISOString())
+
+  expect(prisma.post.update).toHaveBeenCalledWith(
+    expect.objectContaining({
+      data: expect.objectContaining({
+        status: 'PUBLISHED',
+        publishedAt: dataPublicacao,
+      }),
+    })
+  )
+})
+
+  it('deve rejeitar a edição quando a categoria não existir', async () => {
+  prisma.user.findUnique.mockResolvedValue({
+    id: 'editor-teste-id',
+    name: 'Editor Teste',
+    email: 'editor@exemplo.com',
+    role: 'EDITOR',
+  })
+
+  prisma.post.findUnique.mockResolvedValue({
+    id: 'post-teste-id',
+    publishedAt: null,
+  })
+
+  prisma.category.findUnique.mockResolvedValue(null)
+
+  const response = await request(app)
+    .put('/api/posts/post-teste-id')
+    .set('Authorization', `Bearer ${tokenEditor}`)
+    .send({
+      categoryId: '12016fa1-cb26-4d8d-8e4d-bfead4dbfbce',
+    })
+
+  expect(response.status).toBe(400)
+  expect(response.body.message).toBe(
+    'A categoria informada não existe.'
+  )
+  expect(prisma.post.update).not.toHaveBeenCalled()
+})
+
+  it('deve rejeitar a edição quando o slug já pertence a outra notícia', async () => {
+  prisma.user.findUnique.mockResolvedValue({
+    id: 'editor-teste-id',
+    name: 'Editor Teste',
+    email: 'editor@exemplo.com',
+    role: 'EDITOR',
+  })
+
+  prisma.post.findUnique.mockResolvedValue({
+    id: 'noticia-atual-id',
+    title: 'Notícia atual',
+    slug: 'noticia-atual',
+    content: 'Conteúdo atual',
+    status: 'DRAFT',
+    categoryId: null,
+  })
+
+  prisma.post.findFirst.mockResolvedValue({
+    id: 'outra-noticia-id',
+    slug: 'slug-ocupado',
+  })
+
+  const response = await request(app)
+    .put('/api/posts/noticia-atual-id')
+    .set('Authorization', `Bearer ${tokenEditor}`)
+    .send({
+      title: 'Notícia atualizada',
+      slug: 'slug-ocupado',
+      content: 'Conteúdo atualizado',
+    })
+
+  expect(response.status).toBe(409)
+  expect(response.body.message).toBe(
+  'Esse slug já está sendo usado por outra notícia.'
+)
+  expect(prisma.post.update).not.toHaveBeenCalled()
+})
+
+  it('deve retornar 500 quando ocorrer um erro ao editar uma notícia', async () => {
+  prisma.user.findUnique.mockResolvedValue({
+    id: 'editor-teste-id',
+    name: 'Editor Teste',
+    email: 'editor@exemplo.com',
+    role: 'EDITOR',
+  })
+
+  prisma.post.findUnique.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .put('/api/posts/noticia-atual-id')
+    .set('Authorization', `Bearer ${tokenEditor}`)
+    .send({
+      title: 'Título atualizado',
+    })
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao editar notícia.'
+  )
+})
+
 })
 
 describe('DELETE /api/posts/:id', () => {
@@ -491,4 +770,39 @@ describe('DELETE /api/posts/:id', () => {
     expect(response.status).toBe(200)
     expect(prisma.post.delete).toHaveBeenCalled()
   })
+
+  it('deve retornar 500 quando ocorrer um erro ao excluir uma notícia', async () => {
+  prisma.user.findUnique.mockResolvedValue({
+    id: 'admin-teste-id',
+    name: 'Administrador Teste',
+    email: 'admin@exemplo.com',
+    role: 'ADMIN',
+  })
+
+  prisma.post.findUnique.mockResolvedValue({
+    id: 'noticia-teste-id',
+    title: 'Notícia de teste',
+    slug: 'noticia-teste',
+  })
+
+  prisma.post.delete.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .delete('/api/posts/noticia-teste-id')
+    .set(
+  'Authorization',
+  `Bearer ${jwt.sign(
+    { id: 'admin-teste-id', role: 'ADMIN' },
+    process.env.JWT_SECRET || 'test-secret'
+  )}`
+)
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao excluir notícia.'
+  )
+})
+
 })
