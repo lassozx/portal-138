@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: portal138-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: portal138
+      POSTGRES_PASSWORD: portal138_dev
+      POSTGRES_DB: portal138
+    ports:
+      - "5433:5432"
+    volumes:
+      - portal138_data:/var/lib/postgresql
+
+volumes:
+  portal138_data:
