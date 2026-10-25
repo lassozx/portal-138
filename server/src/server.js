@@ -1,9 +1,8 @@
 require('dotenv').config()
 
+const env = require('./config/env')
 const app = require('./app')
 
-const PORT = process.env.PORT || 3000
-
-app.listen(PORT, () => {
-  console.log(`Servidor do Portal 138 rodando na porta ${PORT}`)
+app.listen(env.PORT, () => {
+  console.log(`Servidor do Portal 138 rodando na porta ${env.PORT}`)
 })
