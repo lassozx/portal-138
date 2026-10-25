@@ -1,9 +1,46 @@
 const express = require('express')
+const { z } = require('zod')
 const prisma = require('../config/prisma')
 const { authenticateToken, authorizeRoles } = require('../middlewares/auth')
 
 const router = express.Router()
+const createPostSchema = z.object({
+  title: z.string().trim().min(3).max(200),
+  slug: z
+    .string()
+    .trim()
+    .min(3)
+    .max(200)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  excerpt: z.string().trim().max(500).optional().nullable(),
+  content: z.string().trim().min(1),
+  coverImage: z.string().trim().max(2048).optional().nullable(),
+  categoryId: z.string().uuid().optional().nullable(),
+})
 
+const updatePostSchema = z
+  .object({
+    title: z.string().trim().min(3).max(200).optional(),
+    slug: z
+      .string()
+      .trim()
+      .min(3)
+      .max(200)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+      .optional(),
+    excerpt: z.string().trim().max(500).optional().nullable(),
+    content: z.string().trim().min(1).optional(),
+    coverImage: z.string().trim().max(2048).optional().nullable(),
+    categoryId: z.string().uuid().optional().nullable(),
+    status: z
+  .enum(['DRAFT', 'PUBLISHED', 'ARCHIVED'], {
+    error: 'Status inválido.',
+  })
+  .optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: 'Informe pelo menos um campo para atualizar.',
+  })
 
 /**
  * @swagger
@@ -350,14 +387,28 @@ router.post(
   authorizeRoles('ADMIN', 'EDITOR'),
   async (req, res) => {
     try {
-      const { title, slug, excerpt, content, coverImage, categoryId } =
-        req.body
+      const validation = createPostSchema.safeParse(req.body)
 
-      if (!title || !slug || !content) {
+      if (!validation.success) {
+        const requiredFields = ['title', 'slug', 'content']
+
+        const missingRequiredFields = requiredFields.some(
+          (field) =>
+            req.body?.[field] === undefined ||
+            req.body?.[field] === null ||
+            req.body?.[field] === '',
+        )
+
         return res.status(400).json({
-          message: 'Título, slug e conteúdo são obrigatórios.',
+          message: missingRequiredFields
+            ? 'Título, slug e conteúdo são obrigatórios.'
+            : 'Dados da notícia inválidos.',
+          errors: validation.error.issues,
         })
       }
+
+      const { title, slug, excerpt, content, coverImage, categoryId } =
+        validation.data
 
       const existingPost = await prisma.post.findUnique({
         where: { slug },
@@ -416,6 +467,21 @@ router.put(
   async (req, res) => {
     try {
       const { id } = req.params
+      const validation = updatePostSchema.safeParse(req.body)
+
+            if (!validation.success) {
+        const invalidStatus = validation.error.issues.some(
+          (issue) => issue.path[0] === 'status',
+        )
+
+        return res.status(400).json({
+          message: invalidStatus
+            ? 'Status inválido.'
+            : 'Dados de atualização inválidos.',
+          errors: validation.error.issues,
+        })
+      }
+
       const {
         title,
         slug,
@@ -424,7 +490,7 @@ router.put(
         coverImage,
         categoryId,
         status,
-      } = req.body
+      } = validation.data
 
       const existingPost = await prisma.post.findUnique({
         where: { id },
