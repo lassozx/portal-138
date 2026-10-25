@@ -2,6 +2,7 @@ jest.mock('../src/config/prisma', () => ({
   user: {
     findUnique: jest.fn(),
     create: jest.fn(),
+    update: jest.fn(),
   },
 }))
 
@@ -273,4 +274,181 @@ it('deve rejeitar um token expirado', async () => {
     expect(prisma.user.findUnique).not.toHaveBeenCalled()
   })
 
+})
+
+describe('PUT /api/auth/profile', () => {
+  const userId = 'usuario-teste-id'
+
+  let token
+
+  const existingUser = {
+    id: userId,
+    name: 'Usuario Teste',
+    email: 'usuario@exemplo.com',
+    passwordHash: 'hash-senha-atual',
+    role: 'USER',
+    createdAt: new Date('2026-01-01T12:00:00.000Z'),
+  }
+
+  const updatedUser = {
+    id: userId,
+    name: 'Nome Atualizado',
+    email: 'usuario@exemplo.com',
+    role: 'USER',
+    createdAt: new Date('2026-01-01T12:00:00.000Z'),
+    updatedAt: new Date('2026-01-02T12:00:00.000Z'),
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+
+    process.env.JWT_SECRET = 'segredo-de-teste-jwt'
+
+    token = jwt.sign(
+      { userId },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' },
+    )
+
+    prisma.user.findUnique.mockResolvedValue(existingUser)
+  })
+
+  it('deve atualizar o nome do usuário', async () => {
+    prisma.user.update.mockResolvedValue(updatedUser)
+
+    const response = await request(app)
+      .put('/api/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Nome Atualizado' })
+
+    expect(response.status).toBe(200)
+    expect(response.body.message).toBe('Perfil atualizado com sucesso.')
+    expect(response.body.user.name).toBe('Nome Atualizado')
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: userId },
+        data: { name: 'Nome Atualizado' },
+      }),
+    )
+  })
+
+  it('deve rejeitar uma atualização sem campos', async () => {
+    const response = await request(app)
+      .put('/api/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({})
+
+    expect(response.status).toBe(400)
+    expect(response.body.message).toBe('Dados de atualização inválidos.')
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it('deve rejeitar um nome muito curto', async () => {
+    const response = await request(app)
+      .put('/api/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'A' })
+
+    expect(response.status).toBe(400)
+    expect(response.body.message).toBe('Dados de atualização inválidos.')
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it('deve exigir a senha atual ao informar uma nova senha', async () => {
+    const response = await request(app)
+      .put('/api/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ newPassword: 'NovaSenhaSegura123' })
+
+    expect(response.status).toBe(400)
+    expect(response.body.message).toBe('Dados de atualização inválidos.')
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it('deve retornar 404 quando o usuário não existir', async () => {
+  prisma.user.findUnique
+    .mockResolvedValueOnce({
+      id: userId,
+      name: 'Usuario Teste',
+      email: 'usuario@exemplo.com',
+      role: 'USER',
+    })
+    .mockResolvedValueOnce(null)
+
+  const response = await request(app)
+    .put('/api/auth/profile')
+    .set('Authorization', `Bearer ${token}`)
+    .send({ name: 'Nome Atualizado' })
+
+  expect(response.status).toBe(404)
+  expect(response.body.message).toBe('Usuário não encontrado.')
+  expect(prisma.user.findUnique).toHaveBeenCalledTimes(2)
+  expect(prisma.user.update).not.toHaveBeenCalled()
+})
+
+  it('deve rejeitar a alteração quando a senha atual estiver incorreta', async () => {
+    bcrypt.compare.mockResolvedValue(false)
+
+    const response = await request(app)
+      .put('/api/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        currentPassword: 'SenhaErrada123',
+        newPassword: 'NovaSenhaSegura123',
+      })
+
+    expect(response.status).toBe(400)
+    expect(response.body.message).toBe('A senha atual está incorreta.')
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it('deve alterar a senha quando a senha atual estiver correta', async () => {
+    bcrypt.compare.mockResolvedValue(true)
+    bcrypt.hash.mockResolvedValue('novo-hash-de-senha')
+
+    prisma.user.update.mockResolvedValue({
+      ...updatedUser,
+      name: existingUser.name,
+    })
+
+    const response = await request(app)
+      .put('/api/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        currentPassword: 'SenhaAtual123',
+        newPassword: 'NovaSenhaSegura123',
+      })
+
+    expect(response.status).toBe(200)
+    expect(response.body.message).toBe('Perfil atualizado com sucesso.')
+
+    expect(bcrypt.compare).toHaveBeenCalledWith(
+      'SenhaAtual123',
+      'hash-senha-atual',
+    )
+
+    expect(bcrypt.hash).toHaveBeenCalledWith(
+      'NovaSenhaSegura123',
+      12,
+    )
+
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: userId },
+        data: { passwordHash: 'novo-hash-de-senha' },
+      }),
+    )
+
+    expect(response.body.user).not.toHaveProperty('passwordHash')
+  })
+
+  it('deve retornar 401 quando não houver token', async () => {
+    const response = await request(app)
+      .put('/api/auth/profile')
+      .send({ name: 'Nome Atualizado' })
+
+    expect(response.status).toBe(401)
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
 })
