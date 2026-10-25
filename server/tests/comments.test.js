@@ -174,124 +174,137 @@ describe('POST /api/comments', () => {
 })
 
 describe('DELETE /api/comments/', () => {
-beforeEach(() => {
-jest.clearAllMocks()
-process.env.JWT_SECRET = 'segredo-teste-portal138'
-})
+  beforeEach(() => {
+    jest.clearAllMocks()
+    process.env.JWT_SECRET = 'segredo-teste-portal138'
+  })
 
-const commentId = 'a12b34cd-1234-4567-8901-abcdef123456'
+  const commentId = 'a12b34cd-1234-4567-8901-abcdef123456'
 
-function createToken(userId = 'usuario-1') {
-return jwt.sign(
-{ userId },
-process.env.JWT_SECRET,
-{ expiresIn: '1h' }
-)
-}
+  function createToken(userId = 'usuario-1') {
+    return jwt.sign(
+      { userId },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+  }
 
-function mockUser(userId = 'usuario-1', role = 'USER') {
-prisma.user.findUnique.mockResolvedValue({
-id: userId,
-name: 'Usuário Teste',
-email: 'usuario@teste.com',
-role,
-})
-}
+  function mockUser(userId = 'usuario-1', role = 'USER') {
+    prisma.user.findUnique.mockResolvedValue({
+      id: userId,
+      name: 'Usuário Teste',
+      email: 'usuario@teste.com',
+      role,
+    })
+  }
 
-it('deve retornar 401 quando não houver token', async () => {
-const response = await request(app)
-.delete(`/api/comments/${commentId}`)
+  it('deve retornar 401 quando não houver token', async () => {
+    const response = await request(app)
+      .delete(`/api/comments/${commentId}`)
 
-expect(response.status).toBe(401)
+    expect(response.status).toBe(401)
+    expect(prisma.comment.findUnique).not.toHaveBeenCalled()
+    expect(prisma.comment.delete).not.toHaveBeenCalled()
+  })
 
-})
+  it('deve retornar 401 quando o usuário autenticado não existir', async () => {
+    prisma.user.findUnique.mockResolvedValue(null)
 
-it('deve retornar 400 quando o ID do comentário for inválido', async () => {
-mockUser()
+    const response = await request(app)
+      .delete(`/api/comments/${commentId}`)
+      .set(
+        'Authorization',
+        `Bearer ${createToken('usuario-inexistente')}`
+      )
 
-const response = await request(app)
-  .delete('/api/comments/id-invalido')
-  .set('Authorization', `Bearer ${createToken()}`)
+    expect(response.status).toBe(401)
+    expect(response.body.message).toBe('Usuário não encontrado.')
+    expect(prisma.comment.findUnique).not.toHaveBeenCalled()
+    expect(prisma.comment.delete).not.toHaveBeenCalled()
+  })
 
-expect(response.status).toBe(400)
+  it('deve retornar 400 quando o ID do comentário for inválido', async () => {
+    mockUser()
 
-})
+    const response = await request(app)
+      .delete('/api/comments/id-invalido')
+      .set('Authorization', `Bearer ${createToken()}`)
 
-it('deve retornar 404 quando o comentário não existir', async () => {
-mockUser()
-prisma.comment.findUnique.mockResolvedValue(null)
+    expect(response.status).toBe(400)
+  })
 
-const response = await request(app)
-  .delete(`/api/comments/${commentId}`)
-  .set('Authorization', `Bearer ${createToken()}`)
+  it('deve retornar 404 quando o comentário não existir', async () => {
+    mockUser()
+    prisma.comment.findUnique.mockResolvedValue(null)
 
-expect(response.status).toBe(404)
+    const response = await request(app)
+      .delete(`/api/comments/${commentId}`)
+      .set('Authorization', `Bearer ${createToken()}`)
 
-})
+    expect(response.status).toBe(404)
+  })
 
-it('deve retornar 403 quando outro usuário tentar excluir o comentário', async () => {
-mockUser('usuario-2', 'USER')
+  it('deve retornar 403 quando outro usuário tentar excluir o comentário', async () => {
+    mockUser('usuario-2', 'USER')
 
-prisma.comment.findUnique.mockResolvedValue({
-  id: commentId,
-  authorId: 'usuario-1',
-})
+    prisma.comment.findUnique.mockResolvedValue({
+      id: commentId,
+      authorId: 'usuario-1',
+    })
 
-const response = await request(app)
-  .delete(`/api/comments/${commentId}`)
-  .set('Authorization', `Bearer ${createToken('usuario-2')}`)
+    const response = await request(app)
+      .delete(`/api/comments/${commentId}`)
+      .set('Authorization', `Bearer ${createToken('usuario-2')}`)
 
-expect(response.status).toBe(403)
+    expect(response.status).toBe(403)
+    expect(prisma.comment.delete).not.toHaveBeenCalled()
+  })
 
-})
+  it('deve permitir que o autor exclua o próprio comentário', async () => {
+    mockUser('usuario-1', 'USER')
 
-it('deve permitir que o autor exclua o próprio comentário', async () => {
-mockUser('usuario-1', 'USER')
+    prisma.comment.findUnique.mockResolvedValue({
+      id: commentId,
+      authorId: 'usuario-1',
+    })
 
-prisma.comment.findUnique.mockResolvedValue({
-  id: commentId,
-  authorId: 'usuario-1',
-})
+    prisma.comment.delete.mockResolvedValue({
+      id: commentId,
+    })
 
-prisma.comment.delete.mockResolvedValue({
-  id: commentId,
-})
+    const response = await request(app)
+      .delete(`/api/comments/${commentId}`)
+      .set('Authorization', `Bearer ${createToken('usuario-1')}`)
 
-const response = await request(app)
-  .delete(`/api/comments/${commentId}`)
-  .set('Authorization', `Bearer ${createToken('usuario-1')}`)
+    expect(response.status).toBe(200)
+    expect(prisma.comment.delete).toHaveBeenCalledWith({
+      where: {
+        id: commentId,
+      },
+    })
+  })
 
-expect(response.status).toBe(200)
-expect(prisma.comment.delete).toHaveBeenCalledWith({
-  where: {
-    id: commentId,
-  },
-})
+  it('deve permitir que um administrador exclua o comentário de outro usuário', async () => {
+    mockUser('admin-1', 'ADMIN')
 
-})
+    prisma.comment.findUnique.mockResolvedValue({
+      id: commentId,
+      authorId: 'usuario-1',
+    })
 
-it('deve permitir que um administrador exclua o comentário de outro usuário', async () => {
-mockUser('admin-1', 'ADMIN')
+    prisma.comment.delete.mockResolvedValue({
+      id: commentId,
+    })
 
-prisma.comment.findUnique.mockResolvedValue({
-  id: commentId,
-  authorId: 'usuario-1',
-})
+    const response = await request(app)
+      .delete(`/api/comments/${commentId}`)
+      .set('Authorization', `Bearer ${createToken('admin-1')}`)
 
-prisma.comment.delete.mockResolvedValue({
-  id: commentId,
-})
-
-const response = await request(app)
-  .delete(`/api/comments/${commentId}`)
-  .set('Authorization', `Bearer ${createToken('admin-1')}`)
-
-expect(response.status).toBe(200)
-expect(prisma.comment.delete).toHaveBeenCalledWith({
-  where: {
-    id: commentId,
-  },
-})
-
-})
+    expect(response.status).toBe(200)
+    expect(prisma.comment.delete).toHaveBeenCalledWith({
+      where: {
+        id: commentId,
+      },
+    })
+  })
 })
