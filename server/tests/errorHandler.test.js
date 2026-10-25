@@ -86,4 +86,32 @@ expect(res.status).not.toHaveBeenCalled()
 expect(res.json).not.toHaveBeenCalled()
 
 })
+
+it('deve usar uma mensagem genérica quando o erro não tiver mensagem', () => {
+  const error = new Error()
+  error.statusCode = 400
+  error.message = ''
+
+  errorHandler(error, req, res, next)
+
+  expect(res.status).toHaveBeenCalledWith(400)
+  expect(res.json).toHaveBeenCalledWith({
+    status: 'error',
+    message: 'Ocorreu um erro na requisição.',
+  })
+})
+
+it('deve retornar 500 quando o código de erro for menor que 400', () => {
+  const error = new Error('Erro de teste')
+  error.statusCode = 399
+
+  errorHandler(error, req, res, next)
+
+  expect(res.status).toHaveBeenCalledWith(500)
+  expect(res.json).toHaveBeenCalledWith({
+    status: 'error',
+    message: 'Erro interno do servidor.',
+  })
+})
+
 })
