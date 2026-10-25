@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken')
 const { z } = require('zod')
 const prisma = require('../config/prisma')
 const { authenticateToken } = require('../middlewares/auth')
+const { authLimiter } = require('../middlewares/rateLimit')
 
 const router = express.Router()
 
@@ -58,7 +59,7 @@ const registerSchema = z.object({
  *         description: Erro interno do servidor
  */
 
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   try {
     const validation = registerSchema.safeParse(req.body)
 
@@ -151,7 +152,7 @@ router.post('/register', async (req, res) => {
  *       '500':
  *         description: Erro interno do servidor
  */
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   try {
     const validation = loginSchema.safeParse(req.body)
 
