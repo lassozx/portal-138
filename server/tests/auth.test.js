@@ -240,4 +240,37 @@ describe('GET /api/auth/me', () => {
 
     expect(response.status).toBe(401)
   })
+
+it('deve rejeitar um token expirado', async () => {
+    const token = jwt.sign(
+      { userId: 'usuario-teste-id' },
+      process.env.JWT_SECRET,
+      { expiresIn: '-1s' },
+    )
+
+    const response = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(response.status).toBe(401)
+    expect(response.body.message).toBe('Token inválido ou expirado.')
+    expect(prisma.user.findUnique).not.toHaveBeenCalled()
+  })
+
+  it('deve rejeitar um token assinado com outra chave', async () => {
+    const token = jwt.sign(
+      { userId: 'usuario-teste-id' },
+      'outra-chave-de-teste',
+      { expiresIn: '1h' },
+    )
+
+    const response = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`)
+
+    expect(response.status).toBe(401)
+    expect(response.body.message).toBe('Token inválido ou expirado.')
+    expect(prisma.user.findUnique).not.toHaveBeenCalled()
+  })
+
 })
