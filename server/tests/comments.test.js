@@ -66,6 +66,22 @@ describe('GET /api/comments/post/:postId', () => {
     expect(response.body[0].content).toBe('Ótima notícia!')
     expect(prisma.comment.findMany).toHaveBeenCalled()
   })
+
+  it('deve retornar 500 quando ocorrer um erro ao listar comentários', async () => {
+  prisma.post.findFirst.mockResolvedValue({ id: postId })
+  prisma.comment.findMany.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .get(`/api/comments/post/${postId}`)
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+  'Erro interno ao listar comentários.'
+)
+})
+
 })
 
 describe('POST /api/comments', () => {
@@ -171,6 +187,28 @@ describe('POST /api/comments', () => {
       })
     )
   })
+
+  it('deve retornar 500 quando ocorrer um erro ao criar comentário', async () => {
+  mockUser()
+  prisma.post.findFirst.mockResolvedValue({ id: postId })
+  prisma.comment.create.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .post('/api/comments')
+    .set('Authorization', `Bearer ${createToken()}`)
+    .send({
+      content: 'Meu comentário',
+      postId,
+    })
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao criar comentário.'
+  )
+})
+
 })
 
 describe('DELETE /api/comments/', () => {
@@ -283,6 +321,28 @@ describe('DELETE /api/comments/', () => {
       },
     })
   })
+
+  it('deve retornar 500 quando ocorrer um erro ao excluir comentário', async () => {
+  mockUser('usuario-1', 'USER')
+
+  prisma.comment.findUnique.mockResolvedValue({
+    id: commentId,
+    authorId: 'usuario-1',
+  })
+
+  prisma.comment.delete.mockRejectedValue(
+    new Error('Erro no banco de dados')
+  )
+
+  const response = await request(app)
+    .delete(`/api/comments/${commentId}`)
+    .set('Authorization', `Bearer ${createToken('usuario-1')}`)
+
+  expect(response.status).toBe(500)
+  expect(response.body.message).toBe(
+    'Erro interno ao excluir comentário.'
+  )
+})
 
   it('deve permitir que um administrador exclua o comentário de outro usuário', async () => {
     mockUser('admin-1', 'ADMIN')
