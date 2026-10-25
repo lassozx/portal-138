@@ -1,4 +1,5 @@
 const express = require('express')
+const helmet = require('helmet')
 const cors = require('cors')
 const prisma = require('./config/prisma')
 const postsRoutes = require('./routes/posts.routes')
@@ -11,6 +12,7 @@ const swaggerSpec = require('./config/swagger')
 
 const app = express()
 
+app.use(helmet())
 app.use(cors())
 app.use(express.json())
 // Documentação interativa da API
