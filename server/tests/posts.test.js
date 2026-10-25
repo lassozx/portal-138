@@ -794,7 +794,7 @@ describe('DELETE /api/posts/:id', () => {
     .set(
   'Authorization',
   `Bearer ${jwt.sign(
-    { id: 'admin-teste-id', role: 'ADMIN' },
+    { userId: 'admin-teste-id', role: 'ADMIN' },
     process.env.JWT_SECRET || 'test-secret'
   )}`
 )
