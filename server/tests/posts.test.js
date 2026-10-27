@@ -118,6 +118,106 @@ describe('GET /api/posts', () => {
 
 })
 
+describe('GET /api/posts/admin', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    process.env.JWT_SECRET = 'segredo-de-teste-jwt'
+  })
+
+  function criarToken(userId) {
+    return jwt.sign(
+      { userId },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    )
+  }
+
+  function configurarUsuario(id, role) {
+    prisma.user.findUnique.mockResolvedValue({
+      id,
+      name: 'Usuário de teste',
+      email: 'teste@exemplo.com',
+      role,
+    })
+  }
+
+  it('deve retornar 401 quando não houver token', async () => {
+    const response = await request(app).get('/api/posts/admin')
+
+    expect(response.status).toBe(401)
+    expect(prisma.post.findMany).not.toHaveBeenCalled()
+    expect(prisma.post.count).not.toHaveBeenCalled()
+  })
+
+  it('deve retornar 403 para um usuário comum', async () => {
+    configurarUsuario('user-teste-id', 'USER')
+
+    const response = await request(app)
+      .get('/api/posts/admin')
+      .set('Authorization', `Bearer ${criarToken('user-teste-id')}`)
+
+    expect(response.status).toBe(403)
+    expect(prisma.post.findMany).not.toHaveBeenCalled()
+    expect(prisma.post.count).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['administrador', 'ADMIN', 'admin-teste-id'],
+    ['editor', 'EDITOR', 'editor-teste-id'],
+  ])('deve permitir acesso ao %s', async (_descricao, role, userId) => {
+    configurarUsuario(userId, role)
+    prisma.post.findMany.mockResolvedValue([])
+    prisma.post.count.mockResolvedValue(0)
+
+    const response = await request(app)
+      .get('/api/posts/admin')
+      .set('Authorization', `Bearer ${criarToken(userId)}`)
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({
+      data: [],
+      pagination: {
+        page: 1,
+        limit: 100,
+        total: 0,
+        totalPages: 0,
+      },
+    })
+    expect(prisma.post.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 0,
+        take: 100,
+        orderBy: { updatedAt: 'desc' },
+      })
+    )
+    expect(prisma.post.count).toHaveBeenCalledTimes(1)
+  })
+
+  it('deve respeitar a paginação solicitada', async () => {
+    configurarUsuario('admin-teste-id', 'ADMIN')
+    prisma.post.findMany.mockResolvedValue([])
+    prisma.post.count.mockResolvedValue(250)
+
+    const response = await request(app)
+      .get('/api/posts/admin?page=2&limit=10')
+      .set('Authorization', `Bearer ${criarToken('admin-teste-id')}`)
+
+    expect(response.status).toBe(200)
+    expect(response.body.pagination).toEqual({
+      page: 2,
+      limit: 10,
+      total: 250,
+      totalPages: 25,
+    })
+    expect(prisma.post.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 10,
+        take: 10,
+      })
+    )
+  })
+})
+
 describe('GET /api/posts/:slug', () => {
   beforeEach(() => {
     jest.clearAllMocks()
