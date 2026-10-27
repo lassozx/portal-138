@@ -534,6 +534,12 @@ router.put(
         status,
       } = validation.data
 
+      if (status !== undefined && req.user.role !== 'ADMIN') {
+        return res.status(403).json({
+          message: 'Somente administradores podem alterar o status da notícia.',
+        })
+      }
+
       const existingPost = await prisma.post.findUnique({
         where: { id },
       })

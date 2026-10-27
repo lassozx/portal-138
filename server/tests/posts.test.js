@@ -608,12 +608,36 @@ describe('PUT /api/posts/:id', () => {
     expect(response.body.post.title).toBe('Título atualizado')
   })
 
+  it.each(['PUBLISHED', 'ARCHIVED', 'DRAFT'])(
+    'deve impedir que um editor altere o status para %s',
+    async (status) => {
+      prisma.user.findUnique.mockResolvedValue({
+        id: 'editor-teste-id',
+        name: 'Editor Teste',
+        email: 'editor@exemplo.com',
+        role: 'EDITOR',
+      })
+
+      const response = await request(app)
+        .put('/api/posts/post-teste-id')
+        .set('Authorization', `Bearer ${tokenEditor}`)
+        .send({ status })
+
+      expect(response.status).toBe(403)
+      expect(response.body.message).toBe(
+        'Somente administradores podem alterar o status da notícia.'
+      )
+      expect(prisma.post.findUnique).not.toHaveBeenCalled()
+      expect(prisma.post.update).not.toHaveBeenCalled()
+    }
+  )
+
   it('deve definir publishedAt ao publicar uma notícia', async () => {
   prisma.user.findUnique.mockResolvedValue({
-    id: 'editor-teste-id',
-    name: 'Editor Teste',
-    email: 'editor@exemplo.com',
-    role: 'EDITOR',
+    id: 'admin-teste-id',
+    name: 'Administrador Teste',
+    email: 'admin@exemplo.com',
+    role: 'ADMIN',
   })
 
   prisma.post.findUnique.mockResolvedValue({
@@ -629,7 +653,7 @@ describe('PUT /api/posts/:id', () => {
 
   const response = await request(app)
     .put('/api/posts/post-teste-id')
-    .set('Authorization', `Bearer ${tokenEditor}`)
+    .set('Authorization', `Bearer ${tokenAdmin}`)
     .send({ status: 'PUBLISHED' })
 
   expect(response.status).toBe(200)
@@ -651,10 +675,10 @@ describe('PUT /api/posts/:id', () => {
   const dataPublicacao = new Date('2026-01-15T12:00:00.000Z')
 
   prisma.user.findUnique.mockResolvedValue({
-    id: 'editor-teste-id',
-    name: 'Editor Teste',
-    email: 'editor@exemplo.com',
-    role: 'EDITOR',
+    id: 'admin-teste-id',
+    name: 'Administrador Teste',
+    email: 'admin@exemplo.com',
+    role: 'ADMIN',
   })
 
   prisma.post.findUnique.mockResolvedValue({
@@ -670,7 +694,7 @@ describe('PUT /api/posts/:id', () => {
 
   const response = await request(app)
     .put('/api/posts/post-teste-id')
-    .set('Authorization', `Bearer ${tokenEditor}`)
+    .set('Authorization', `Bearer ${tokenAdmin}`)
     .send({ status: 'PUBLISHED' })
 
   expect(response.status).toBe(200)
