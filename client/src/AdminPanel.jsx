@@ -134,7 +134,9 @@ function AdminPanel({ token, user, onLogout, onBack }) {
       }
 
       if (editingPost) {
-        payload.status = postForm.status
+        if (isAdmin) {
+          payload.status = postForm.status
+        }
 
         await apiRequest(`/api/posts/${editingPost}`, token, {
           method: 'PUT',
@@ -623,21 +625,21 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                   </select>
                 </label>
 
-                {editingPost && (
+                {editingPost && isAdmin && (
                   <label className={labelClass}>
                     Status
                     <select
                       className={inputClass}
                       name="status"
                       value={postForm.status}
-                      onChange={updatePostField}
-                    >
-                      <option value="DRAFT">Rascunho</option>
-                      <option value="PUBLISHED">Publicado</option>
-                      <option value="ARCHIVED">Arquivado</option>
-                    </select>
-                  </label>
-                )}
+                     onChange={updatePostField}
+               >
+                <option value="DRAFT">Rascunho</option>
+                <option value="PUBLISHED">Publicado</option>
+                <option value="ARCHIVED">Arquivado</option>
+              </select>
+            </label>
+          )}
 
                 <button
                   type="submit"
