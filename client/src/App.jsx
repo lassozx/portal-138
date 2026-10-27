@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Login from './Login.jsx'
 import AdminPanel from './AdminPanel.jsx'
+import Comments from './Comments.jsx'
 
 function App() {
   const [posts, setPosts] = useState([])
@@ -9,6 +10,7 @@ function App() {
   const [search, setSearch] = useState('')
   const [view, setView] = useState('public')
   const [session, setSession] = useState(null)
+  const [selectedPostId, setSelectedPostId] = useState(null)
 
   useEffect(() => {
     async function loadPosts() {
@@ -342,6 +344,25 @@ function App() {
                         <p className="mt-5 border-t border-slate-100 pt-4 text-sm text-slate-500">
                           Por <span className="font-semibold text-slate-700">{post.author.name}</span>
                         </p>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedPostId((currentId) =>
+                            currentId === post.id ? null : post.id,
+                          )
+                        }
+                        aria-expanded={selectedPostId === post.id}
+                        className="mt-5 rounded-lg border border-red-200 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50"
+                      >
+                        {selectedPostId === post.id
+                          ? 'Ocultar comentários'
+                          : 'Ver comentários'}
+                      </button>
+
+                      {selectedPostId === post.id && (
+                        <Comments postId={post.id} session={session} />
                       )}
                     </div>
                   </article>
