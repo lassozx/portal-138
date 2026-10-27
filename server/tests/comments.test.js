@@ -1,6 +1,7 @@
 jest.mock('../src/config/prisma', () => ({
   comment: {
     findMany: jest.fn(),
+    count: jest.fn(),
     findUnique: jest.fn(),
     create: jest.fn(),
     delete: jest.fn(),
@@ -43,9 +44,8 @@ describe('GET /api/comments/post/:postId', () => {
     expect(response.body.message).toBe('Notícia não encontrada.')
   })
 
-  it('deve listar os comentários de uma notícia publicada', async () => {
+  it('deve listar os comentários e retornar os metadados da paginação', async () => {
     prisma.post.findFirst.mockResolvedValue({ id: postId })
-
     prisma.comment.findMany.mockResolvedValue([
       {
         id: 'comentario-1',
@@ -57,31 +57,82 @@ describe('GET /api/comments/post/:postId', () => {
         },
       },
     ])
+    prisma.comment.count.mockResolvedValue(21)
 
     const response = await request(app)
       .get(`/api/comments/post/${postId}`)
 
     expect(response.status).toBe(200)
-    expect(response.body).toHaveLength(1)
-    expect(response.body[0].content).toBe('Ótima notícia!')
-    expect(prisma.comment.findMany).toHaveBeenCalled()
+    expect(response.body.comments).toHaveLength(1)
+    expect(response.body.comments[0].content).toBe('Ótima notícia!')
+    expect(response.body.pagination).toEqual({
+      page: 1,
+      limit: 10,
+      total: 21,
+      totalPages: 3,
+    })
+
+    expect(prisma.comment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { postId },
+        skip: 0,
+        take: 10,
+      }),
+    )
   })
 
-  it('deve retornar 500 quando ocorrer um erro ao listar comentários', async () => {
-  prisma.post.findFirst.mockResolvedValue({ id: postId })
-  prisma.comment.findMany.mockRejectedValue(
-    new Error('Erro no banco de dados')
+  it('deve buscar a página solicitada', async () => {
+    prisma.post.findFirst.mockResolvedValue({ id: postId })
+    prisma.comment.findMany.mockResolvedValue([])
+    prisma.comment.count.mockResolvedValue(25)
+
+    const response = await request(app)
+      .get(`/api/comments/post/${postId}?page=2`)
+
+    expect(response.status).toBe(200)
+    expect(response.body.pagination).toEqual({
+      page: 2,
+      limit: 10,
+      total: 25,
+      totalPages: 3,
+    })
+
+    expect(prisma.comment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        skip: 10,
+        take: 10,
+      }),
+    )
+  })
+
+  it.each(['0', '-1', 'abc', '1.5'])(
+    'deve retornar 400 para a página inválida %s',
+    async (page) => {
+      const response = await request(app)
+        .get(`/api/comments/post/${postId}?page=${page}`)
+
+      expect(response.status).toBe(400)
+      expect(response.body.message).toBe(
+        'O número da página deve ser um inteiro maior que zero.',
+      )
+      expect(prisma.post.findFirst).not.toHaveBeenCalled()
+    },
   )
 
-  const response = await request(app)
-    .get(`/api/comments/post/${postId}`)
+  it('deve retornar 500 quando ocorrer um erro ao listar comentários', async () => {
+    prisma.post.findFirst.mockResolvedValue({ id: postId })
+    prisma.comment.findMany.mockRejectedValue(
+      new Error('Erro no banco de dados'),
+    )
 
-  expect(response.status).toBe(500)
-  expect(response.body.message).toBe(
-  'Erro interno ao listar comentários.'
-)
-})
+    const response = await request(app)
+      .get(`/api/comments/post/${postId}`)
 
+    expect(response.status).toBe(500)
+    expect(response.body.message).toBe(
+      'Erro interno ao listar comentários.',
+    )
+  })
 })
 
 describe('POST /api/comments', () => {

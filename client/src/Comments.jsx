@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 
+const COMMENTS_PER_PAGE = 10
+
 function Comments({ postId, session }) {
   const [comments, setComments] = useState([])
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: COMMENTS_PER_PAGE,
+    total: 0,
+    totalPages: 0,
+  })
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const [error, setError] = useState('')
@@ -12,15 +21,20 @@ function Comments({ postId, session }) {
   const token = session?.token
   const currentUser = session?.user
 
-  const loadComments = useCallback(async () => {
+  const loadComments = useCallback(async (page = 1, append = false) => {
     try {
-      setLoading(true)
+      if (append) {
+        setLoadingMore(true)
+      } else {
+        setLoading(true)
+      }
+
       setError('')
 
       const response = await fetch(
-        `/api/comments/post/${encodeURIComponent(postId)}`,
+        `/api/comments/post/${encodeURIComponent(postId)}?page=${page}`,
       )
-      const result = await response.json().catch(() => [])
+      const result = await response.json().catch(() => ({}))
 
       if (!response.ok) {
         throw new Error(
@@ -28,16 +42,41 @@ function Comments({ postId, session }) {
         )
       }
 
-      setComments(Array.isArray(result) ? result : [])
+      if (!Array.isArray(result.comments) || !result.pagination) {
+        throw new Error('A resposta da API de comentários é inválida.')
+      }
+
+      setComments((previous) => {
+        if (!append) {
+          return result.comments
+        }
+
+        const existingIds = new Set(previous.map((comment) => comment.id))
+        const newComments = result.comments.filter(
+          (comment) => !existingIds.has(comment.id),
+        )
+
+        return [...previous, ...newComments]
+      })
+
+      setPagination(result.pagination)
     } catch (err) {
       setError(err.message || 'Erro ao carregar os comentários.')
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }, [postId])
 
   useEffect(() => {
-    loadComments()
+    setComments([])
+    setPagination({
+      page: 1,
+      limit: COMMENTS_PER_PAGE,
+      total: 0,
+      totalPages: 0,
+    })
+    loadComments(1)
   }, [loadComments])
 
   async function handleSubmit(event) {
@@ -80,25 +119,30 @@ function Comments({ postId, session }) {
       const result = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        throw new Error(result.message || 'Não foi possível publicar o comentário.')
-      }
-
-      if (result.comment) {
-        setComments((previous) => [
-          result.comment,
-          ...previous.filter((item) => item.id !== result.comment.id),
-        ])
-      } else {
-        await loadComments()
+        throw new Error(
+          result.message || 'Não foi possível publicar o comentário.',
+        )
       }
 
       setContent('')
+
+      // Recarrega a primeira página para manter a ordem mais recente.
+      await loadComments(1)
+
       setMessage('Comentário publicado com sucesso.')
     } catch (err) {
       setError(err.message || 'Erro ao publicar o comentário.')
     } finally {
       setSubmitting(false)
     }
+  }
+
+  async function handleLoadMore() {
+    if (loadingMore || loading || pagination.page >= pagination.totalPages) {
+      return
+    }
+
+    await loadComments(pagination.page + 1, true)
   }
 
   async function handleDelete(commentId) {
@@ -121,12 +165,12 @@ function Comments({ postId, session }) {
       const result = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        throw new Error(result.message || 'Não foi possível excluir o comentário.')
+        throw new Error(
+          result.message || 'Não foi possível excluir o comentário.',
+        )
       }
 
-      setComments((previous) =>
-        previous.filter((comment) => comment.id !== commentId),
-      )
+      await loadComments(1)
       setMessage('Comentário excluído com sucesso.')
     } catch (err) {
       setError(err.message || 'Erro ao excluir o comentário.')
@@ -154,17 +198,23 @@ function Comments({ postId, session }) {
       className="mt-5 border-t border-slate-100 pt-5"
     >
       <h4 className="text-base font-bold text-slate-900">
-        Comentários ({comments.length})
+        Comentários ({pagination.total})
       </h4>
 
       {error && (
-        <p role="alert" className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <p
+          role="alert"
+          className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700"
+        >
           {error}
         </p>
       )}
 
       {message && (
-        <p role="status" className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700">
+        <p
+          role="status"
+          className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700"
+        >
           {message}
         </p>
       )}
@@ -210,7 +260,9 @@ function Comments({ postId, session }) {
 
       <div className="mt-5 space-y-4">
         {loading ? (
-          <p className="text-sm text-slate-500">Carregando comentários...</p>
+          <p className="text-sm text-slate-500">
+            Carregando comentários...
+          </p>
         ) : comments.length === 0 ? (
           !error && (
             <p className="text-sm text-slate-500">
@@ -234,6 +286,7 @@ function Comments({ postId, session }) {
                     <p className="text-sm font-bold text-slate-900">
                       {comment.author?.name || 'Usuário'}
                     </p>
+
                     {comment.createdAt && (
                       <time
                         dateTime={comment.createdAt}
@@ -252,7 +305,9 @@ function Comments({ postId, session }) {
                       className="text-xs font-semibold text-red-700 hover:text-red-900 disabled:opacity-50"
                       aria-label={`Excluir comentário de ${comment.author?.name || 'Usuário'}`}
                     >
-                      {deletingId === comment.id ? 'Excluindo...' : 'Excluir'}
+                      {deletingId === comment.id
+                        ? 'Excluindo...'
+                        : 'Excluir'}
                     </button>
                   )}
                 </div>
@@ -265,6 +320,19 @@ function Comments({ postId, session }) {
           })
         )}
       </div>
+
+      {!loading && pagination.page < pagination.totalPages && (
+        <div className="mt-5 text-center">
+          <button
+            type="button"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loadingMore ? 'Carregando...' : 'Carregar mais comentários'}
+          </button>
+        </div>
+      )}
     </section>
   )
 }

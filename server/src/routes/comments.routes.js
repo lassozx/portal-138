@@ -110,14 +110,25 @@ const commentSchema = z.object({
  *         description: Erro interno
  */
 
-// Listar comentários de uma notícia publicada
+// Listar comentários paginados de uma notícia publicada
 router.get('/post/:postId', async (req, res) => {
   try {
     const { postId } = req.params
+    const parsedPage = Number(req.query.page ?? 1)
+    const limit = 10
 
     if (!z.string().uuid().safeParse(postId).success) {
       return res.status(400).json({
         message: 'O ID da notícia é inválido.',
+      })
+    }
+
+    if (
+      !Number.isInteger(parsedPage) ||
+      parsedPage < 1
+    ) {
+      return res.status(400).json({
+        message: 'O número da página deve ser um inteiro maior que zero.',
       })
     }
 
@@ -136,23 +147,41 @@ router.get('/post/:postId', async (req, res) => {
       })
     }
 
-    const comments = await prisma.comment.findMany({
-      where: { postId },
-      select: {
-        id: true,
-        content: true,
-        createdAt: true,
-        author: {
-          select: {
-            id: true,
-            name: true,
+    const where = { postId }
+
+    const [comments, total] = await Promise.all([
+      prisma.comment.findMany({
+        where,
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+        orderBy: [
+          { createdAt: 'desc' },
+          { id: 'desc' },
+        ],
+        skip: (parsedPage - 1) * limit,
+        take: limit,
+      }),
+      prisma.comment.count({ where }),
+    ])
 
-    return res.json(comments)
+    return res.json({
+      comments,
+      pagination: {
+        page: parsedPage,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    })
   } catch (error) {
     console.error('Erro ao listar comentários:', error.message)
 

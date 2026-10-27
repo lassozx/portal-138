@@ -25,6 +25,18 @@ function createSession(role = 'USER', id = 'user-1') {
   }
 }
 
+function paginatedResponse(comments = [], page = 1, total = comments.length) {
+  return {
+    comments,
+    pagination: {
+      page,
+      limit: 10,
+      total,
+      totalPages: Math.ceil(total / 10),
+    },
+  }
+}
+
 function mockFetch(responses) {
   global.fetch = vi.fn()
 
@@ -50,15 +62,61 @@ describe('Comments', () => {
   })
 
   it('carrega e exibe os comentários', async () => {
-    mockFetch([{ body: [comment] }])
+    mockFetch([{ body: paginatedResponse([comment]) }])
 
     render(<Comments postId={postId} session={null} />)
 
     expect(await screen.findByText('Comentário de teste')).toBeInTheDocument()
     expect(screen.getByText('Usuário Teste')).toBeInTheDocument()
+    expect(screen.getByText('Comentários (1)')).toBeInTheDocument()
+
     expect(global.fetch).toHaveBeenCalledWith(
-      `/api/comments/post/${postId}`,
+      `/api/comments/post/${postId}?page=1`,
     )
+  })
+
+  it('carrega mais comentários ao clicar no botão', async () => {
+    const secondComment = {
+      ...comment,
+      id: 'comment-2',
+      content: 'Comentário da segunda página',
+      author: {
+        id: 'user-2',
+        name: 'Outro Usuário',
+      },
+    }
+
+    const fetchMock = mockFetch([
+      {
+        body: paginatedResponse([comment], 1, 11),
+      },
+      {
+        body: paginatedResponse([secondComment], 2, 11),
+      },
+    ])
+
+    render(<Comments postId={postId} session={null} />)
+
+    expect(await screen.findByText('Comentário de teste')).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Carregar mais comentários' }),
+    )
+
+    expect(
+      await screen.findByText('Comentário da segunda página'),
+    ).toBeInTheDocument()
+
+    expect(screen.getByText('Comentário de teste')).toBeInTheDocument()
+    expect(screen.getByText('Comentários (11)')).toBeInTheDocument()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/comments/post/${postId}?page=2`,
+    )
+
+    expect(
+      screen.queryByRole('button', { name: 'Carregar mais comentários' }),
+    ).not.toBeInTheDocument()
   })
 
   it('permite publicar um comentário autenticado', async () => {
@@ -69,7 +127,9 @@ describe('Comments', () => {
     }
 
     const fetchMock = mockFetch([
-      { body: [] },
+      {
+        body: paginatedResponse([], 1, 0),
+      },
       {
         status: 201,
         body: {
@@ -77,14 +137,19 @@ describe('Comments', () => {
           comment: newComment,
         },
       },
+      {
+        body: paginatedResponse([newComment], 1, 1),
+      },
     ])
 
     render(<Comments postId={postId} session={createSession()} />)
 
     const textarea = await screen.findByLabelText('Escreva um comentário')
+
     fireEvent.change(textarea, {
       target: { value: '  Meu novo comentário  ' },
     })
+
     fireEvent.click(screen.getByRole('button', { name: 'Publicar comentário' }))
 
     expect(await screen.findByText('Meu novo comentário')).toBeInTheDocument()
@@ -92,7 +157,7 @@ describe('Comments', () => {
       'Comentário publicado com sucesso.',
     )
 
-    expect(fetchMock).toHaveBeenLastCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       '/api/comments',
       expect.objectContaining({
         method: 'POST',
@@ -108,7 +173,11 @@ describe('Comments', () => {
   })
 
   it('não publica um comentário vazio', async () => {
-    mockFetch([{ body: [] }])
+    mockFetch([
+      {
+        body: paginatedResponse([], 1, 0),
+      },
+    ])
 
     render(<Comments postId={postId} session={createSession()} />)
 
@@ -140,8 +209,15 @@ describe('Comments', () => {
 
   it('permite que o autor exclua o próprio comentário', async () => {
     const fetchMock = mockFetch([
-      { body: [comment] },
-      { body: { message: 'Comentário excluído.' } },
+      {
+        body: paginatedResponse([comment]),
+      },
+      {
+        body: { message: 'Comentário excluído.' },
+      },
+      {
+        body: paginatedResponse([]),
+      },
     ])
 
     render(<Comments postId={postId} session={createSession()} />)
@@ -156,7 +232,7 @@ describe('Comments', () => {
       expect(screen.queryByText('Comentário de teste')).not.toBeInTheDocument()
     })
 
-    expect(fetchMock).toHaveBeenLastCalledWith(
+    expect(fetchMock).toHaveBeenCalledWith(
       '/api/comments/comment-1',
       expect.objectContaining({
         method: 'DELETE',
@@ -168,7 +244,11 @@ describe('Comments', () => {
   })
 
   it('não mostra o botão de exclusão para outro usuário', async () => {
-    mockFetch([{ body: [comment] }])
+    mockFetch([
+      {
+        body: paginatedResponse([comment]),
+      },
+    ])
 
     render(
       <Comments
@@ -187,7 +267,11 @@ describe('Comments', () => {
   })
 
   it('permite que um administrador exclua comentários de outros usuários', async () => {
-    mockFetch([{ body: [comment] }])
+    mockFetch([
+      {
+        body: paginatedResponse([comment]),
+      },
+    ])
 
     render(
       <Comments
