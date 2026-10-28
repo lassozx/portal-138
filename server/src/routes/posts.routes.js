@@ -288,10 +288,26 @@ router.get('/', async (req, res) => {
     }
 
     if (search) {
-      where.title = {
-        contains: search,
-        mode: 'insensitive',
-      }
+      where.OR = [
+        {
+          title: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          excerpt: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          content: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      ]
     }
 
     if (categoryId) {

@@ -66,10 +66,26 @@ describe('GET /api/posts', () => {
     expect(prisma.post.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          title: {
-            contains: 'tecnologia',
-            mode: 'insensitive',
-          },
+          OR: [
+            {
+              title: {
+                contains: 'tecnologia',
+                mode: 'insensitive',
+              },
+            },
+            {
+              excerpt: {
+                contains: 'tecnologia',
+                mode: 'insensitive',
+              },
+            },
+            {
+              content: {
+                contains: 'tecnologia',
+                mode: 'insensitive',
+              },
+            },
+          ],
           categoryId: 'categoria-1',
         }),
         orderBy: [

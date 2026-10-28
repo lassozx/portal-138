@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Login from './Login.jsx'
 import AdminPanel from './AdminPanel.jsx'
+import Profile from './Profile.jsx'
 import Comments from './Comments.jsx'
 
 function App() {
@@ -73,6 +74,23 @@ function App() {
     )
   }
 
+  if (view === 'profile' && session) {
+    return (
+      <Profile
+        token={session.token}
+        user={session.user}
+        onBack={() => setView('public')}
+        onUserUpdated={(updatedUser) => {
+          setSession((current) =>
+            current
+              ? { ...current, user: { ...current.user, ...updatedUser } }
+              : current,
+          )
+        }}
+      />
+    )
+  }
+
   if (view === 'admin' && session) {
     return (
       <AdminPanel
@@ -128,6 +146,15 @@ function App() {
           </nav>
 
           <div className="flex items-center gap-2">
+            {session && (
+              <button
+                type="button"
+                onClick={() => setView('profile')}
+                className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 sm:px-4"
+              >
+                Meu perfil
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setView(session ? 'admin' : 'login')}
