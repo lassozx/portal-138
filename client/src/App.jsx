@@ -3,6 +3,7 @@ import Login from './Login.jsx'
 import AdminPanel from './AdminPanel.jsx'
 import Profile from './Profile.jsx'
 import Article from './Article.jsx'
+import AccountMenu from './AccountMenu.jsx'
 
 // Hash URLs work on static hosts as well as Vite, including direct links and reloads.
 function articleSlug() {
@@ -87,6 +88,9 @@ function App() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  const canManage = ['ADMIN', 'EDITOR'].includes(session?.user?.role)
+  function logout() { setSession(null); setView('public') }
+
   const featuredPost = !loading && !error && !search && !categoryId && page === 1 ? posts[0] : null
 
   function formatDate(date) {
@@ -104,7 +108,7 @@ function App() {
       <Login
         onLogin={(newSession) => {
           setSession(newSession)
-          setView(slug ? 'public' : 'admin')
+          setView(!slug && ['ADMIN', 'EDITOR'].includes(newSession.user.role) ? 'admin' : 'public')
         }}
         onBack={() => setView('public')}
       />
@@ -128,7 +132,7 @@ function App() {
     )
   }
 
-  if (view === 'admin' && session) {
+  if (view === 'admin' && canManage) {
     return (
       <AdminPanel
         token={session.token}
@@ -142,7 +146,7 @@ function App() {
     )
   }
 
-  if (slug) return <Article key={slug} slug={slug} session={session} onLogin={() => setView('login')} />
+  if (slug) return <Article key={slug} slug={slug} session={session} onLogin={() => setView('login')} onLogout={logout} onProfile={() => setView('profile')} onAdmin={() => setView('admin')} />
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -186,22 +190,7 @@ function App() {
           </nav>
 
           <div className="flex items-center gap-2">
-            {session && (
-              <button
-                type="button"
-                onClick={() => setView('profile')}
-                className="rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-100 sm:px-4"
-              >
-                Meu perfil
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setView(session ? 'admin' : 'login')}
-              className="rounded-lg border border-red-700 px-3 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-50 sm:px-4"
-            >
-              {session ? 'Painel' : 'Entrar'}
-            </button>
+            <AccountMenu session={session} onLogin={() => setView('login')} onLogout={logout} onProfile={() => setView('profile')} onAdmin={() => setView('admin')} />
             <a
               href="#noticias"
               className="hidden rounded-lg bg-red-700 px-3 py-2.5 sm:inline-flex text-sm font-bold text-white transition hover:bg-red-800 sm:px-4"

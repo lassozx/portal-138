@@ -97,7 +97,7 @@ function Comments({ postId, session }) {
     }
 
     if (!token) {
-      setError('Entre no painel para publicar um comentário.')
+      setError('Entre na sua conta para publicar um comentário.')
       return
     }
 
@@ -254,7 +254,7 @@ function Comments({ postId, session }) {
         </form>
       ) : (
         <p className="mt-3 text-sm text-slate-600">
-          Entre no painel para publicar comentários.
+          Entre na sua conta para publicar comentários.
         </p>
       )}
 

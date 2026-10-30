@@ -26,7 +26,7 @@ it('abre diretamente uma URL compartilhada e carrega texto completo e comentári
   expect(fetch).toHaveBeenCalledWith('/api/posts/feira', expect.anything())
   expect(screen.getByRole('link', { name: '← Todas as notícias' })).toHaveAttribute('href', '#noticias')
   fireEvent.click(screen.getByRole('button', { name: 'Entrar para comentar' }))
-  expect(screen.getByRole('button', { name: 'Entrar no painel' })).toBeVisible()
+  expect(screen.getByRole('button', { name: 'Entrar na minha conta' })).toBeVisible()
 })
 
 it('acompanha a navegação entre a lista e a notícia sem recarregar', async () => {

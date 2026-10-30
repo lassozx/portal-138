@@ -1,6 +1,10 @@
 import { useState } from 'react'
 
 function Login({ onLogin, onBack }) {
+  const [registering, setRegistering] = useState(false)
+  const [name, setName] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [notice, setNotice] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -10,21 +14,38 @@ function Login({ onLogin, onBack }) {
   async function handleSubmit(event) {
     event.preventDefault()
     setError('')
+    setNotice('')
 
     if (!email.trim() || !password) {
       setError('Preencha o e-mail e a senha.')
       return
     }
 
+    if (registering) {
+      if (name.trim().length < 2) {
+        setError('Informe seu nome com pelo menos 2 caracteres.')
+        return
+      }
+      if (password.length < 8 || password.length > 72) {
+        setError('A senha deve ter entre 8 e 72 caracteres.')
+        return
+      }
+      if (password !== confirmPassword) {
+        setError('As senhas não coincidem.')
+        return
+      }
+    }
+
     try {
       setLoading(true)
 
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(registering ? '/api/auth/register' : '/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          ...(registering ? { name: name.trim() } : {}),
           email: email.trim(),
           password,
         }),
@@ -34,17 +55,25 @@ function Login({ onLogin, onBack }) {
 
       if (!response.ok) {
         throw new Error(
-          result.message || 'Não foi possível entrar. Verifique suas credenciais.',
+          result.message || (registering ? 'Não foi possível criar sua conta.' : 'Não foi possível entrar. Verifique suas credenciais.'),
         )
+      }
+
+      if (registering) {
+        setRegistering(false)
+        setPassword('')
+        setConfirmPassword('')
+        setNotice('Conta criada com sucesso! Entre com seu e-mail e senha.')
+        return
       }
 
       if (!result.token || !result.user) {
         throw new Error('A resposta do servidor está incompleta.')
       }
 
-      if (!['ADMIN', 'EDITOR'].includes(result.user.role)) {
+      if (!['ADMIN', 'EDITOR', 'USER'].includes(result.user.role)) {
         throw new Error(
-          'Sua conta não tem permissão para acessar o painel administrativo.',
+          'Não foi possível reconhecer o tipo desta conta.',
         )
       }
 
@@ -72,18 +101,18 @@ function Login({ onLogin, onBack }) {
           </h1>
 
           <p className="mt-2 text-sm text-red-100">
-            Área administrativa
+            Comunidade escolar
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5 p-8">
           <div>
             <h2 className="text-2xl font-bold text-slate-900">
-              Bem-vindo de volta
+              {registering ? 'Crie sua conta' : 'Bem-vindo de volta'}
             </h2>
 
             <p className="mt-2 text-sm text-slate-500">
-              Entre com sua conta de administrador ou editor.
+              {registering ? 'Estudantes, responsáveis e comunidade: participe das conversas do portal.' : 'Entre para comentar e acompanhar nossa comunidade escolar.'}
             </p>
           </div>
 
@@ -93,6 +122,15 @@ function Login({ onLogin, onBack }) {
               className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
             >
               {error}
+            </div>
+          )}
+
+          {notice && <p role="status" className="rounded-xl bg-green-50 p-4 text-sm text-green-800">{notice}</p>}
+
+          {registering && (
+            <div>
+              <label htmlFor="register-name" className="mb-2 block text-sm font-semibold text-slate-700">Nome</label>
+              <input id="register-name" type="text" autoComplete="name" value={name} onChange={(event) => setName(event.target.value)} minLength={2} maxLength={100} required disabled={loading} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
             </div>
           )}
 
@@ -129,7 +167,9 @@ function Login({ onLogin, onBack }) {
               <input
                 id="login-password"
                 type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
+                autoComplete={registering ? 'new-password' : 'current-password'}
+                minLength={registering ? 8 : undefined}
+                maxLength={registering ? 72 : undefined}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="Digite sua senha"
@@ -148,12 +188,31 @@ function Login({ onLogin, onBack }) {
             </div>
           </div>
 
+          {registering && (
+            <div>
+              <label htmlFor="register-confirm" className="mb-2 block text-sm font-semibold text-slate-700">Confirmar senha</label>
+              <input id="register-confirm" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required disabled={loading} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
+              <p className="mt-2 text-xs text-slate-500">Use uma senha de 8 a 72 caracteres.</p>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
             className="w-full rounded-xl bg-red-700 px-4 py-3.5 font-bold text-white transition hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? 'Entrando...' : 'Entrar no painel'}
+            {loading ? (registering ? 'Criando conta...' : 'Entrando...') : (registering ? 'Criar minha conta' : 'Entrar na minha conta')}
+          </button>
+
+          <button type="button" disabled={loading} onClick={() => {
+            setRegistering((current) => !current)
+            setError('')
+            setNotice('')
+            setPassword('')
+            setConfirmPassword('')
+            setShowPassword(false)
+          }} className="w-full rounded-xl px-4 py-3 font-bold text-red-700 hover:bg-red-50 disabled:opacity-60">
+            {registering ? 'Já tenho conta' : 'Criar uma conta'}
           </button>
 
           <button
@@ -166,7 +225,7 @@ function Login({ onLogin, onBack }) {
           </button>
 
           <p className="text-center text-xs leading-5 text-slate-400">
-            Acesso restrito a usuários autorizados.
+            As contas da comunidade podem comentar e gerenciar o próprio perfil.
           </p>
         </form>
       </section>

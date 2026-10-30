@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Comments from './Comments.jsx'
 import ArticleContent from './ArticleContent.jsx'
+import AccountMenu from './AccountMenu.jsx'
 
-export default function Article({ slug, session, onLogin }) {
+export default function Article({ slug, session, onLogin, onLogout, onProfile, onAdmin }) {
   const [post, setPost] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -51,6 +52,7 @@ export default function Article({ slug, session, onLogin }) {
       <header className="border-b border-slate-200">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4 px-5 py-5">
           <a href="#inicio" aria-label="Portal 138 — Início" className="text-xl font-black">Portal <span className="text-red-700">138</span></a>
+          <AccountMenu session={session} onLogin={onLogin} onLogout={onLogout} onProfile={onProfile} onAdmin={onAdmin} />
           <a href="#noticias" className="rounded-lg px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-50">← Todas as notícias</a>
         </div>
       </header>
