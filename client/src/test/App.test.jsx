@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import App from '../App.jsx'
 
-const post = { id: 'p1', title: 'Feira de ciências', excerpt: 'Projetos dos alunos', content: 'Texto completo sobre as experiências da feira.', publishedAt: '2026-10-30', category: { name: 'Projetos' } }
+const post = { id: 'p1', slug: 'feira-de-ciencias', title: 'Feira de ciências', excerpt: 'Projetos dos alunos', content: 'Texto completo sobre as experiências da feira.', publishedAt: '2026-10-30', category: { name: 'Projetos' } }
 const result = (posts = [post], page = 1) => ({ data: posts, pagination: { page, total: 13, totalPages: 2 } })
 function mockApi(handler = () => result()) {
   vi.stubGlobal('fetch', vi.fn(async (url, options) => {
@@ -12,15 +12,13 @@ function mockApi(handler = () => result()) {
 }
 afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
-it('mostra a notícia da API em destaque e permite ler o conteúdo completo', async () => {
+it('mostra a notícia da API em destaque e links compartilháveis para a leitura', async () => {
   mockApi()
   render(<App />)
   await screen.findByText('Em destaque · Projetos')
   expect(screen.queryByText(post.content)).not.toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Ler notícia completa' }))
-  expect(screen.getByText(post.content)).toBeVisible()
-  fireEvent.click(screen.getByRole('button', { name: 'Recolher notícia' }))
-  expect(screen.queryByText(post.content)).not.toBeInTheDocument()
+  expect(screen.getByRole('link', { name: 'Ler notícia completa →' })).toHaveAttribute('href', '#/noticias/feira-de-ciencias')
+  expect(screen.getByRole('link', { name: 'Ler notícia', exact: true })).toHaveAttribute('href', '#/noticias/feira-de-ciencias')
 })
 
 it('pagina pela API e reinicia a página ao selecionar uma categoria ou buscar', async () => {

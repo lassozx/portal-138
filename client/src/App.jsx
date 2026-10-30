@@ -2,9 +2,26 @@ import { useEffect, useState } from 'react'
 import Login from './Login.jsx'
 import AdminPanel from './AdminPanel.jsx'
 import Profile from './Profile.jsx'
-import Comments from './Comments.jsx'
+import Article from './Article.jsx'
+
+// Hash URLs work on static hosts as well as Vite, including direct links and reloads.
+function articleSlug() {
+  const match = window.location.hash.match(/^#\/noticias\/([^/?#]+)$/)
+  if (!match) return null
+  try { return decodeURIComponent(match[1]) } catch { return match[1] }
+}
+
+function articleLink(post) {
+  return `#/noticias/${encodeURIComponent(post.slug)}`
+}
 
 function App() {
+  const [slug, setSlug] = useState(articleSlug)
+  useEffect(() => {
+    const update = () => { setSlug(articleSlug()); setView('public') }
+    window.addEventListener('hashchange', update)
+    return () => window.removeEventListener('hashchange', update)
+  }, [])
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -15,13 +32,12 @@ function App() {
   const [page, setPage] = useState(1)
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0 })
   const [retry, setRetry] = useState(0)
-  const [expandedPostId, setExpandedPostId] = useState(null)
   const [view, setView] = useState('public')
   const [session, setSession] = useState(null)
-  const [selectedPostId, setSelectedPostId] = useState(null)
   const [showScrollTop, setShowScrollTop] = useState(false)
 
   useEffect(() => {
+    if (slug) return
     const controller = new AbortController()
     async function loadPosts() {
       setLoading(true)
@@ -36,8 +52,6 @@ function App() {
         if (controller.signal.aborted) return
         setPosts(Array.isArray(result.data) ? result.data : [])
         setPagination(result.pagination || { total: 0, totalPages: 0 })
-        setExpandedPostId(null)
-        setSelectedPostId(null)
       } catch (err) {
         if (!controller.signal.aborted) setError(err.message || 'Erro ao conectar com o servidor.')
       } finally {
@@ -48,7 +62,7 @@ function App() {
     setLoading(true)
     const timeout = setTimeout(loadPosts, search ? 300 : 0)
     return () => { clearTimeout(timeout); controller.abort() }
-  }, [search, categoryId, page, retry])
+  }, [search, categoryId, page, retry, slug])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -90,7 +104,7 @@ function App() {
       <Login
         onLogin={(newSession) => {
           setSession(newSession)
-          setView('admin')
+          setView(slug ? 'public' : 'admin')
         }}
         onBack={() => setView('public')}
       />
@@ -127,6 +141,8 @@ function App() {
       />
     )
   }
+
+  if (slug) return <Article key={slug} slug={slug} session={session} onLogin={() => setView('login')} />
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -244,7 +260,7 @@ function App() {
                     <p className="text-xs font-bold uppercase tracking-widest text-red-700">Em destaque · {featuredPost.category?.name || 'Notícias'}</p>
                     <h3 className="mt-4 text-2xl font-black leading-tight sm:text-3xl">{featuredPost.title}</h3>
                     <p className="mt-4 line-clamp-3 leading-7 text-slate-600">{featuredPost.excerpt || featuredPost.content}</p>
-                    <a href={`#noticia-${featuredPost.id}`} onClick={() => setExpandedPostId(featuredPost.id)} className="mt-6 inline-flex font-bold text-red-700 hover:underline">Ler notícia <span aria-hidden="true"> →</span></a>
+                    <a href={articleLink(featuredPost)} className="mt-6 inline-flex font-bold text-red-700 hover:underline">Ler notícia <span aria-hidden="true"> →</span></a>
                   </div>
                 </>
               ) : (
@@ -382,17 +398,14 @@ function App() {
                       </div>
 
                       <h3 className="mt-4 text-xl font-black leading-snug transition group-hover:text-red-700">
-                        {post.title}
+                        <a href={articleLink(post)} className="hover:underline">{post.title}</a>
                       </h3>
 
                       <p className="mt-3 line-clamp-3 leading-7 text-slate-600">
                         {post.excerpt || post.content}
                       </p>
 
-                      <button type="button" aria-expanded={expandedPostId === post.id} aria-controls={`texto-${post.id}`} onClick={() => setExpandedPostId(expandedPostId === post.id ? null : post.id)} className="mt-4 rounded-lg px-1 py-2 font-bold text-red-700 hover:underline">
-                        {expandedPostId === post.id ? 'Recolher notícia' : 'Ler notícia completa'}
-                      </button>
-                      {expandedPostId === post.id && <div id={`texto-${post.id}`} className="mt-4 whitespace-pre-wrap break-words border-t border-slate-100 pt-4 leading-8 text-slate-700">{post.content}</div>}
+                      <a href={articleLink(post)} className="mt-4 inline-flex rounded-lg px-1 py-2 font-bold text-red-700 hover:underline">Ler notícia completa →</a>
 
                       {post.author?.name && (
                         <p className="mt-5 border-t border-slate-100 pt-4 text-sm text-slate-500">
@@ -400,24 +413,7 @@ function App() {
                         </p>
                       )}
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedPostId((currentId) =>
-                            currentId === post.id ? null : post.id,
-                          )
-                        }
-                        aria-expanded={selectedPostId === post.id}
-                        className="mt-5 rounded-lg border border-red-200 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50"
-                      >
-                        {selectedPostId === post.id
-                          ? 'Ocultar comentários'
-                          : 'Ver comentários'}
-                      </button>
 
-                      {selectedPostId === post.id && (
-                        <Comments postId={post.id} session={session} />
-                      )}
                     </div>
                   </article>
                 ))}
