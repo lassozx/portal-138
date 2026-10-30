@@ -14,3 +14,13 @@ body {
   min-height: 100vh;
   font-family: Arial, Helvetica, sans-serif;
 }
+section[id] { scroll-margin-top: 11rem; }
+button, a, input, select { touch-action: manipulation; }
+:focus-visible { outline: 3px solid #b91c1c; outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -151,7 +151,7 @@ function Profile({ token, user, onBack, onUserUpdated }) {
                 Perfil de acesso
               </p>
               <p className="mt-1 text-sm font-medium">
-                {user?.role === 'ADMIN' ? 'Administrador' : 'Editor'}
+                {{ ADMIN: 'Administrador', EDITOR: 'Editor', USER: 'Comunidade' }[user?.role] || 'Não informado'}
               </p>
             </div>
           </div>

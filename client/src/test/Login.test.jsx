@@ -45,7 +45,7 @@ describe('Login — autenticação e permissões', () => {
     render(<Login onLogin={onLogin} onBack={onBack} />)
 
     preencherFormulario(' admin@exemplo.com ', 'SenhaSegura123')
-    fireEvent.click(screen.getByRole('button', { name: 'Entrar no painel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar na minha conta' }))
 
     await waitFor(() => {
       expect(onLogin).toHaveBeenCalledWith({
@@ -80,7 +80,7 @@ describe('Login — autenticação e permissões', () => {
     render(<Login onLogin={onLogin} onBack={onBack} />)
 
     preencherFormulario('usuario@exemplo.com', 'SenhaErrada123')
-    fireEvent.click(screen.getByRole('button', { name: 'Entrar no painel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar na minha conta' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'E-mail ou senha incorretos.',
@@ -89,7 +89,7 @@ describe('Login — autenticação e permissões', () => {
     expect(onLogin).not.toHaveBeenCalled()
   })
 
-  it('não deve permitir acesso ao painel para usuários com papel USER', async () => {
+  it('deve autenticar contas USER para participar do portal', async () => {
     fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -106,13 +106,10 @@ describe('Login — autenticação e permissões', () => {
     render(<Login onLogin={onLogin} onBack={onBack} />)
 
     preencherFormulario('usuario@exemplo.com', 'SenhaSegura123')
-    fireEvent.click(screen.getByRole('button', { name: 'Entrar no painel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar na minha conta' }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Sua conta não tem permissão para acessar o painel administrativo.',
-    )
-
-    expect(onLogin).not.toHaveBeenCalled()
+    await waitFor(() => expect(onLogin).toHaveBeenCalledWith(expect.objectContaining({ user: expect.objectContaining({ role: 'USER' }) })))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it('deve rejeitar uma resposta sem token ou usuário', async () => {
@@ -124,7 +121,7 @@ describe('Login — autenticação e permissões', () => {
     render(<Login onLogin={onLogin} onBack={onBack} />)
 
     preencherFormulario('admin@exemplo.com', 'SenhaSegura123')
-    fireEvent.click(screen.getByRole('button', { name: 'Entrar no painel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar na minha conta' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'A resposta do servidor está incompleta.',
@@ -139,7 +136,7 @@ describe('Login — autenticação e permissões', () => {
     render(<Login onLogin={onLogin} onBack={onBack} />)
 
     preencherFormulario('admin@exemplo.com', 'SenhaSegura123')
-    fireEvent.click(screen.getByRole('button', { name: 'Entrar no painel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar na minha conta' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Falha de conexão',
@@ -156,4 +153,53 @@ describe('Login — autenticação e permissões', () => {
     expect(onBack).toHaveBeenCalledTimes(1)
     expect(fetch).not.toHaveBeenCalled()
   })
+  it('rejeita tipos de conta desconhecidos', async () => {
+    fetch.mockResolvedValue({ ok: true, json: async () => ({ token: 'jwt', user: { role: 'OTHER' } }) })
+    render(<Login onLogin={onLogin} onBack={onBack} />)
+    preencherFormulario('teste@example.com', 'Senha12345')
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar na minha conta' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível reconhecer o tipo desta conta.')
+    expect(onLogin).not.toHaveBeenCalled()
+  })
+
+  function preencherCadastro(confirm = 'Senha12345') {
+    fireEvent.click(screen.getByRole('button', { name: 'Criar uma conta' }))
+    fireEvent.change(screen.getByLabelText('Nome'), { target: { value: '  Maria Silva  ' } })
+    preencherFormulario('maria@example.com', 'Senha12345')
+    fireEvent.change(screen.getByLabelText('Confirmar senha'), { target: { value: confirm } })
+  }
+
+  it('cadastra uma conta sem solicitar privilégio e volta ao login com o e-mail preenchido', async () => {
+    fetch.mockResolvedValue({ ok: true, json: async () => ({ user: { role: 'USER' } }) })
+    render(<Login onLogin={onLogin} onBack={onBack} />)
+    preencherCadastro()
+    fireEvent.click(screen.getByRole('button', { name: 'Criar minha conta' }))
+    expect(await screen.findByRole('status')).toHaveTextContent('Conta criada com sucesso!')
+    expect(fetch).toHaveBeenCalledWith('/api/auth/register', expect.objectContaining({ method: 'POST', body: JSON.stringify({ name: 'Maria Silva', email: 'maria@example.com', password: 'Senha12345' }) }))
+    expect(screen.getByLabelText('E-mail')).toHaveValue('maria@example.com')
+    expect(screen.getByLabelText('Senha')).toHaveValue('')
+    expect(onLogin).not.toHaveBeenCalled()
+    expect(screen.queryByLabelText('Confirmar senha')).not.toBeInTheDocument()
+  })
+
+  it('não envia cadastro quando as senhas não coincidem', async () => {
+    render(<Login onLogin={onLogin} onBack={onBack} />)
+    preencherCadastro('OutraSenha')
+    fireEvent.click(screen.getByRole('button', { name: 'Criar minha conta' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('As senhas não coincidem.')
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('preserva os dados e permite corrigir um e-mail já cadastrado', async () => {
+    fetch.mockResolvedValue({ ok: false, json: async () => ({ message: 'Este e-mail já está cadastrado.' }) })
+    render(<Login onLogin={onLogin} onBack={onBack} />)
+    preencherCadastro()
+    fireEvent.click(screen.getByRole('button', { name: 'Criar minha conta' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Este e-mail já está cadastrado.')
+    expect(screen.getByLabelText('Nome')).toHaveValue('  Maria Silva  ')
+    fireEvent.click(screen.getByRole('button', { name: 'Já tenho conta' }))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Senha')).toHaveValue('')
+  })
+
 })
