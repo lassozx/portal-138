@@ -3,7 +3,7 @@ import Comments from './Comments.jsx'
 import ArticleContent from './ArticleContent.jsx'
 import AccountMenu from './AccountMenu.jsx'
 
-export default function Article({ slug, session, onLogin, onLogout, onProfile, onAdmin }) {
+export default function Article({ slug, session, sessionNotice, onLogin, onLogout, onProfile, onAdmin }) {
   const [post, setPost] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -56,6 +56,7 @@ export default function Article({ slug, session, onLogin, onLogout, onProfile, o
           <a href="#noticias" className="rounded-lg px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-50">← Todas as notícias</a>
         </div>
       </header>
+      {sessionNotice}
       <main className="mx-auto max-w-4xl px-5 py-10 sm:py-16">
         {loading ? <p role="status" className="py-16 text-slate-500">Carregando notícia…</p> : notFound || error ? (
           <div className="rounded-2xl border border-red-100 bg-red-50 p-8">
