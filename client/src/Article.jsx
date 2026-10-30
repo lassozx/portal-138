@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Comments from './Comments.jsx'
+import ArticleContent from './ArticleContent.jsx'
 
 export default function Article({ slug, session, onLogin }) {
   const [post, setPost] = useState(null)
@@ -45,10 +46,6 @@ export default function Article({ slug, session, onLogin }) {
     if (!loading) heading.current?.focus()
   }, [loading])
 
-  const publishedAt = post?.publishedAt || post?.createdAt
-  const date = publishedAt ? new Date(publishedAt) : null
-  const validDate = date && !Number.isNaN(date.getTime())
-
   return (
     <div className="min-h-screen bg-white text-slate-900">
       <header className="border-b border-slate-200">
@@ -67,17 +64,7 @@ export default function Article({ slug, session, onLogin }) {
           </div>
         ) : post && (
           <>
-            <article>
-              <p className="text-sm font-bold uppercase tracking-widest text-red-700">{post.category?.name || 'Notícias'}</p>
-              <h1 ref={heading} tabIndex={-1} className="focus:outline-none mt-4 break-words text-3xl font-black leading-tight tracking-tight sm:text-5xl">{post.title}</h1>
-              {post.excerpt && <p className="mt-5 text-lg leading-8 text-slate-600 sm:text-xl">{post.excerpt}</p>}
-              <div className="mt-6 flex flex-wrap gap-x-4 gap-y-2 border-b border-slate-200 pb-6 text-sm text-slate-500">
-                <span>Por <span className="font-semibold text-slate-700">{post.author?.name || 'Redação Portal 138'}</span></span>
-                {validDate && <time dateTime={publishedAt}>{new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(date)}</time>}
-              </div>
-              {post.coverImage && <img src={post.coverImage} alt="" fetchPriority="high" className="mt-8 max-h-[32rem] w-full rounded-2xl object-contain" />}
-              <div className="mx-auto mt-8 max-w-prose whitespace-pre-wrap break-words text-lg leading-9 text-slate-800">{post.content}</div>
-            </article>
+            <ArticleContent post={post} headingRef={heading} />
             <section aria-label="Participe da conversa" className="mx-auto mt-12 max-w-prose">
               {!session && <button onClick={onLogin} className="rounded-lg bg-red-700 px-5 py-3 font-bold text-white hover:bg-red-800">Entrar para comentar</button>}
               <Comments key={post.id} postId={post.id} session={session} />

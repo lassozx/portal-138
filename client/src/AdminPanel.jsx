@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import ArticleContent from './ArticleContent.jsx'
 
 const EMPTY_POST = {
   title: '',
@@ -42,6 +43,7 @@ async function apiRequest(path, token, options = {}) {
 
 function AdminPanel({ token, user, onLogout, onBack }) {
   const [section, setSection] = useState('posts')
+  const [previewing, setPreviewing] = useState(false)
   const [posts, setPosts] = useState([])
   const [categories, setCategories] = useState([])
   const [postForm, setPostForm] = useState(EMPTY_POST)
@@ -95,6 +97,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
   }
 
   function editPost(post) {
+    setPreviewing(false)
     setEditingPost(post.id)
     setPostForm({
       title: post.title || '',
@@ -112,6 +115,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
   }
 
   function resetPostForm() {
+    setPreviewing(false)
     setEditingPost(null)
     setPostForm(EMPTY_POST)
   }
@@ -536,7 +540,29 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                 )}
               </div>
 
-              <form onSubmit={savePost} className="space-y-4">
+              <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="Modo do editor">
+                <button type="button" aria-pressed={!previewing} onClick={() => setPreviewing(false)} className={`rounded-lg px-4 py-2 text-sm font-bold ${!previewing ? 'bg-red-700 text-white' : 'border border-slate-300 text-slate-700'}`}>Escrever</button>
+                <button type="button" aria-pressed={previewing} onClick={() => setPreviewing(true)} className={`rounded-lg px-4 py-2 text-sm font-bold ${previewing ? 'bg-red-700 text-white' : 'border border-slate-300 text-slate-700'}`}>Pré-visualizar notícia</button>
+              </div>
+
+              {previewing && (
+                <section aria-label="Prévia da notícia" className="min-w-0">
+                  <p className="mb-6 rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-900">Prévia das alterações atuais. Estas alterações ainda não foram salvas ou publicadas. Volte a Escrever para continuar ou salvar.</p>
+                  <ArticleContent
+                    compact
+                    headingLevel="h3"
+                    post={{
+                      ...postForm,
+                      title: postForm.title.trim() || 'Título da notícia',
+                      content: postForm.content.trim() || 'O conteúdo da sua notícia aparecerá aqui.',
+                      author: posts.find((post) => post.id === editingPost)?.author || user,
+                      category: categories.find((category) => category.id === postForm.categoryId),
+                    }}
+                  />
+                </section>
+              )}
+
+              <form hidden={previewing} onSubmit={savePost} className="space-y-4">
                 <label className={labelClass}>
                   Título *
                   <input
