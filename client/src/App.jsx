@@ -4,6 +4,7 @@ import AdminPanel from './AdminPanel.jsx'
 import Profile from './Profile.jsx'
 import Article from './Article.jsx'
 import AccountMenu from './AccountMenu.jsx'
+import useSession from './useSession.js'
 
 // Hash URLs work on static hosts as well as Vite, including direct links and reloads.
 function articleSlug() {
@@ -34,7 +35,7 @@ function App() {
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0 })
   const [retry, setRetry] = useState(0)
   const [view, setView] = useState('public')
-  const [session, setSession] = useState(null)
+  const { session, status, notice, signIn, signOut, updateUser, retryRestore } = useSession()
   const [showScrollTop, setShowScrollTop] = useState(false)
 
   useEffect(() => {
@@ -89,7 +90,8 @@ function App() {
   }, [])
 
   const canManage = ['ADMIN', 'EDITOR'].includes(session?.user?.role)
-  function logout() { setSession(null); setView('public') }
+  function logout() { signOut(); setView('public') }
+  const sessionNotice = notice && <p role="status" className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-center text-sm text-amber-900">{notice}</p>
 
   const featuredPost = !loading && !error && !search && !categoryId && page === 1 ? posts[0] : null
 
@@ -103,11 +105,26 @@ function App() {
     }).format(new Date(date))
   }
 
+  if (status !== 'ready') {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 text-slate-900">
+        <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8">
+          <h1 className="text-2xl font-black">Portal <span className="text-red-700">138</span></h1>
+          {status === 'checking' ? <p role="status" className="mt-4 text-slate-600">Verificando sua sessão…</p> : <>
+            <p role="alert" className="mt-4 leading-7 text-slate-600">Não foi possível verificar sua sessão. Tente novamente ou continue sem entrar.</p>
+            <button type="button" onClick={retryRestore} className="mt-5 w-full rounded-lg bg-red-700 px-4 py-3 font-bold text-white">Tentar novamente</button>
+            <button type="button" onClick={logout} className="mt-3 w-full rounded-lg border border-slate-300 px-4 py-3 font-bold text-slate-700">Continuar sem entrar</button>
+          </>}
+        </section>
+      </main>
+    )
+  }
+
   if (view === 'login') {
     return (
       <Login
         onLogin={(newSession) => {
-          setSession(newSession)
+          signIn(newSession)
           setView(!slug && ['ADMIN', 'EDITOR'].includes(newSession.user.role) ? 'admin' : 'public')
         }}
         onBack={() => setView('public')}
@@ -121,13 +138,7 @@ function App() {
         token={session.token}
         user={session.user}
         onBack={() => setView('public')}
-        onUserUpdated={(updatedUser) => {
-          setSession((current) =>
-            current
-              ? { ...current, user: { ...current.user, ...updatedUser } }
-              : current,
-          )
-        }}
+        onUserUpdated={updateUser}
       />
     )
   }
@@ -137,16 +148,13 @@ function App() {
       <AdminPanel
         token={session.token}
         user={session.user}
-        onLogout={() => {
-          setSession(null)
-          setView('public')
-        }}
+        onLogout={logout}
         onBack={() => setView('public')}
       />
     )
   }
 
-  if (slug) return <Article key={slug} slug={slug} session={session} onLogin={() => setView('login')} onLogout={logout} onProfile={() => setView('profile')} onAdmin={() => setView('admin')} />
+  if (slug) return <Article key={slug} slug={slug} session={session} sessionNotice={sessionNotice} onLogin={() => setView('login')} onLogout={logout} onProfile={() => setView('profile')} onAdmin={() => setView('admin')} />
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -207,6 +215,7 @@ function App() {
         </nav>
       </header>
 
+      {sessionNotice}
       <main id="conteudo">
         {/* Destaque principal */}
         <section id="inicio" className="overflow-hidden bg-red-50">
