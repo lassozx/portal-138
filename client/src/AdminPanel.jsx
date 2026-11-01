@@ -18,9 +18,9 @@ const EMPTY_CATEGORY = {
 }
 
 const inputClass =
-  'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-red-600 focus:ring-2 focus:ring-red-100'
+  'mt-1 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100'
 
-const labelClass = 'block text-sm font-semibold text-slate-700'
+const labelClass = 'block text-sm font-semibold text-neutral-700'
 
 async function apiRequest(path, token, options = {}) {
   const response = await fetch(path, {
@@ -298,24 +298,24 @@ function AdminPanel({ token, user, onLogout, onBack }) {
     }
 
     if (status === 'ARCHIVED') {
-      return 'bg-slate-200 text-slate-700'
+      return 'bg-neutral-200 text-neutral-700'
     }
 
     return 'bg-amber-100 text-amber-800'
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900">
-      <header className="bg-red-800 text-white">
+    <div className="portal-internal min-h-screen bg-[#f5f5f5] text-neutral-900">
+      <header className="border-b border-neutral-200 border-t-4 border-t-red-700 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-5 md:px-8">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-red-200">
+            <p className="text-xs font-bold uppercase tracking-wider text-red-700">
               Portal 138
             </p>
-            <h1 className="mt-1 text-2xl font-black">
+            <h1 className="mt-1 text-2xl font-bold">
               Painel administrativo
             </h1>
-            <p className="mt-1 text-sm text-red-100">
+            <p className="mt-1 text-sm text-neutral-600">
               Olá, {user?.name || 'usuário'} · {user?.role || 'USER'}
             </p>
           </div>
@@ -324,14 +324,14 @@ function AdminPanel({ token, user, onLogout, onBack }) {
             <button
               type="button"
               onClick={onBack}
-              className="rounded-lg border border-white/40 px-4 py-2 text-sm font-bold transition hover:bg-white/10"
+              className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-bold text-neutral-700 transition hover:bg-neutral-100"
             >
               Ver portal
             </button>
             <button
               type="button"
               onClick={onLogout}
-              className="rounded-lg bg-white px-4 py-2 text-sm font-bold text-red-800 transition hover:bg-red-50"
+              className="rounded-md border border-red-700 bg-white px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50"
             >
               Sair
             </button>
@@ -341,42 +341,42 @@ function AdminPanel({ token, user, onLogout, onBack }) {
 
       <main className="mx-auto max-w-7xl px-5 py-8 md:px-8">
         <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Total de notícias</p>
-            <p className="mt-2 text-3xl font-black">{posts.length}</p>
-            <p className="mt-1 text-xs text-slate-400">Todos os status</p>
+          <div className="rounded-lg border border-neutral-200 bg-white p-5">
+            <p className="text-sm text-neutral-500">Total de notícias</p>
+            <p className="mt-2 text-3xl font-bold">{posts.length}</p>
+            <p className="mt-1 text-xs text-neutral-500">Todos os status</p>
           </div>
 
-          <div className="rounded-2xl border border-green-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Publicadas</p>
-            <p className="mt-2 text-3xl font-black text-green-700">
+          <div className="rounded-lg border border-green-200 bg-white p-5">
+            <p className="text-sm text-neutral-500">Publicadas</p>
+            <p className="mt-2 text-3xl font-bold text-green-700">
               {posts.filter((post) => post.status === 'PUBLISHED').length}
             </p>
-            <p className="mt-1 text-xs text-slate-400">Visíveis no portal</p>
+            <p className="mt-1 text-xs text-neutral-500">Visíveis no portal</p>
           </div>
 
-          <div className="rounded-2xl border border-amber-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Rascunhos</p>
-            <p className="mt-2 text-3xl font-black text-amber-700">
+          <div className="rounded-lg border border-amber-200 bg-white p-5">
+            <p className="text-sm text-neutral-500">Rascunhos</p>
+            <p className="mt-2 text-3xl font-bold text-amber-700">
               {posts.filter((post) => post.status === 'DRAFT').length}
             </p>
-            <p className="mt-1 text-xs text-slate-400">Aguardando publicação</p>
+            <p className="mt-1 text-xs text-neutral-500">Aguardando publicação</p>
           </div>
 
-          <div className="rounded-2xl border border-slate-300 bg-white p-5">
-            <p className="text-sm text-slate-500">Arquivadas</p>
-            <p className="mt-2 text-3xl font-black text-slate-700">
+          <div className="rounded-lg border border-neutral-300 bg-white p-5">
+            <p className="text-sm text-neutral-500">Arquivadas</p>
+            <p className="mt-2 text-3xl font-bold text-neutral-700">
               {posts.filter((post) => post.status === 'ARCHIVED').length}
             </p>
-            <p className="mt-1 text-xs text-slate-400">Fora das publicações ativas</p>
+            <p className="mt-1 text-xs text-neutral-500">Fora das publicações ativas</p>
           </div>
 
-          <div className="rounded-2xl border border-red-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Categorias</p>
-            <p className="mt-2 text-3xl font-black text-red-700">
+          <div className="rounded-lg border border-red-200 bg-white p-5">
+            <p className="text-sm text-neutral-500">Categorias</p>
+            <p className="mt-2 text-3xl font-bold text-red-700">
               {categories.length}
             </p>
-            <p className="mt-1 text-xs text-slate-400">Organização do conteúdo</p>
+            <p className="mt-1 text-xs text-neutral-500">Organização do conteúdo</p>
           </div>
         </div>
 
@@ -391,7 +391,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
             className={`rounded-lg px-5 py-3 text-sm font-bold ${
               section === 'posts'
                 ? 'bg-red-700 text-white'
-                : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                : 'border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50'
             }`}
           >
             Notícias
@@ -407,7 +407,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
             className={`rounded-lg px-5 py-3 text-sm font-bold ${
               section === 'categories'
                 ? 'bg-red-700 text-white'
-                : 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
+                : 'border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50'
             }`}
           >
             Categorias
@@ -416,7 +416,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
           <button
             type="button"
             onClick={loadData}
-            className="ml-auto rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
+            className="ml-auto rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
           >
             Atualizar dados
           </button>
@@ -425,7 +425,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
         {error && (
           <div
             role="alert"
-            className="mb-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+            className="mb-5 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800"
           >
             {error}
           </div>
@@ -434,7 +434,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
         {notice && (
           <div
             role="status"
-            className="mb-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800"
+            className="mb-5 rounded-md border border-green-200 bg-green-50 p-4 text-sm text-green-800"
           >
             {notice}
           </div>
@@ -442,25 +442,25 @@ function AdminPanel({ token, user, onLogout, onBack }) {
 
         {section === 'posts' && (
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]">
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-black">Notícias</h2>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <h2 className="text-xl font-bold">Notícias</h2>
+                  <p className="mt-1 text-sm text-neutral-500">
                     Gerencie publicações, rascunhos e arquivos.
                   </p>
                 </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-bold">
+                <span className="rounded bg-neutral-100 px-3 py-1 text-sm font-bold">
                   {posts.length}
                 </span>
               </div>
 
               {loading ? (
-                <p className="py-8 text-sm text-slate-500">
+                <p className="py-8 text-sm text-neutral-500">
                   Carregando notícias...
                 </p>
               ) : posts.length === 0 ? (
-                <p className="rounded-xl bg-slate-50 p-5 text-sm text-slate-600">
+                <p className="rounded-md bg-neutral-50 p-5 text-sm text-neutral-600">
                   Nenhuma notícia encontrada.
                 </p>
               ) : (
@@ -468,24 +468,24 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                   {posts.map((post) => (
                     <article
                       key={post.id}
-                      className="rounded-xl border border-slate-200 p-4"
+                      className="rounded-md border border-neutral-200 p-4"
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <h3 className="break-words font-bold">
                             {post.title}
                           </h3>
-                          <p className="mt-1 break-all text-xs text-slate-500">
+                          <p className="mt-1 break-all text-xs text-neutral-500">
                             /{post.slug}
                           </p>
                           <div className="mt-3 flex flex-wrap items-center gap-2">
                             <span
-                              className={`rounded-full px-2.5 py-1 text-xs font-bold ${statusClass(post.status)}`}
+                              className={`rounded px-2.5 py-1 text-xs font-bold ${statusClass(post.status)}`}
                             >
                               {statusLabel(post.status)}
                             </span>
                             {post.category?.name && (
-                              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+                              <span className="rounded bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600">
                                 {post.category.name}
                               </span>
                             )}
@@ -495,7 +495,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                         <button
                           type="button"
                           onClick={() => editPost(post)}
-                          className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-bold hover:bg-slate-50"
+                          className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-bold hover:bg-neutral-50"
                         >
                           Editar
                         </button>
@@ -516,13 +516,13 @@ function AdminPanel({ token, user, onLogout, onBack }) {
               )}
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-black">
+                  <h2 className="text-xl font-bold">
                     {editingPost ? 'Editar notícia' : 'Nova notícia'}
                   </h2>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-neutral-500">
                     {editingPost
                       ? 'Altere os campos e salve.'
                       : 'Novas notícias começam como rascunho.'}
@@ -533,7 +533,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                   <button
                     type="button"
                     onClick={resetPostForm}
-                    className="text-sm font-bold text-slate-500 hover:text-slate-900"
+                    className="text-sm font-bold text-neutral-500 hover:text-neutral-900"
                   >
                     Cancelar
                   </button>
@@ -541,8 +541,8 @@ function AdminPanel({ token, user, onLogout, onBack }) {
               </div>
 
               <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="Modo do editor">
-                <button type="button" aria-pressed={!previewing} onClick={() => setPreviewing(false)} className={`rounded-lg px-4 py-2 text-sm font-bold ${!previewing ? 'bg-red-700 text-white' : 'border border-slate-300 text-slate-700'}`}>Escrever</button>
-                <button type="button" aria-pressed={previewing} onClick={() => setPreviewing(true)} className={`rounded-lg px-4 py-2 text-sm font-bold ${previewing ? 'bg-red-700 text-white' : 'border border-slate-300 text-slate-700'}`}>Pré-visualizar notícia</button>
+                <button type="button" aria-pressed={!previewing} onClick={() => setPreviewing(false)} className={`rounded-lg px-4 py-2 text-sm font-bold ${!previewing ? 'bg-red-700 text-white' : 'border border-neutral-300 text-neutral-700'}`}>Escrever</button>
+                <button type="button" aria-pressed={previewing} onClick={() => setPreviewing(true)} className={`rounded-lg px-4 py-2 text-sm font-bold ${previewing ? 'bg-red-700 text-white' : 'border border-neutral-300 text-neutral-700'}`}>Pré-visualizar notícia</button>
               </div>
 
               {previewing && (
@@ -670,7 +670,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-full rounded-xl bg-red-700 px-5 py-3 font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-md bg-red-700 px-5 py-3 font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving
                     ? 'Salvando...'
@@ -685,18 +685,18 @@ function AdminPanel({ token, user, onLogout, onBack }) {
 
         {section === 'categories' && (
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.7fr)]">
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-              <h2 className="text-xl font-black">Categorias cadastradas</h2>
-              <p className="mt-1 text-sm text-slate-500">
+            <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
+              <h2 className="text-xl font-bold">Categorias cadastradas</h2>
+              <p className="mt-1 text-sm text-neutral-500">
                 Organize as notícias por assunto.
               </p>
 
               {loading ? (
-                <p className="py-8 text-sm text-slate-500">
+                <p className="py-8 text-sm text-neutral-500">
                   Carregando categorias...
                 </p>
               ) : categories.length === 0 ? (
-                <p className="mt-5 rounded-xl bg-slate-50 p-5 text-sm text-slate-600">
+                <p className="mt-5 rounded-md bg-neutral-50 p-5 text-sm text-neutral-600">
                   Nenhuma categoria cadastrada.
                 </p>
               ) : (
@@ -704,15 +704,15 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                   {categories.map((category) => (
                     <article
                       key={category.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-4"
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-neutral-200 p-4"
                     >
                       <div>
                         <h3 className="font-bold">{category.name}</h3>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-neutral-500">
                           /{category.slug}
                         </p>
                         {category.description && (
-                          <p className="mt-2 text-sm text-slate-600">
+                          <p className="mt-2 text-sm text-neutral-600">
                             {category.description}
                           </p>
                         )}
@@ -731,7 +731,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                           <button
                             type="button"
                             onClick={() => deleteCategory(category)}
-                            className="text-sm font-bold text-slate-500 hover:text-red-700"
+                            className="text-sm font-bold text-neutral-500 hover:text-red-700"
                           >
                             Excluir
                           </button>
@@ -743,13 +743,13 @@ function AdminPanel({ token, user, onLogout, onBack }) {
               )}
             </section>
 
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+            <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-black">
+                  <h2 className="text-xl font-bold">
                     {editingCategory ? 'Editar categoria' : 'Nova categoria'}
                   </h2>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-neutral-500">
                     O slug será usado no endereço interno.
                   </p>
                 </div>
@@ -758,7 +758,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                   <button
                     type="button"
                     onClick={resetCategoryForm}
-                    className="text-sm font-bold text-slate-500 hover:text-slate-900"
+                    className="text-sm font-bold text-neutral-500 hover:text-neutral-900"
                   >
                     Cancelar
                   </button>
@@ -814,7 +814,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="w-full rounded-xl bg-red-700 px-5 py-3 font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-md bg-red-700 px-5 py-3 font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving
                     ? 'Salvando...'
@@ -827,7 +827,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
           </div>
         )}
 
-        <p className="mt-8 text-center text-xs leading-5 text-slate-500">
+        <p className="mt-8 text-center text-xs leading-5 text-neutral-500">
           O acesso às operações é validado pelo servidor. As permissões da
           interface não substituem a autenticação da API.
         </p>

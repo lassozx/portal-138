@@ -3,24 +3,40 @@ import Login from './Login.jsx'
 import AdminPanel from './AdminPanel.jsx'
 import Profile from './Profile.jsx'
 import Article from './Article.jsx'
-import AccountMenu from './AccountMenu.jsx'
+import { PortalHeader, PortalFooter } from './PortalChrome.jsx'
 import useSession from './useSession.js'
 
 // Hash URLs work on static hosts as well as Vite, including direct links and reloads.
 function articleSlug() {
   const match = window.location.hash.match(/^#\/noticias\/([^/?#]+)$/)
   if (!match) return null
-  try { return decodeURIComponent(match[1]) } catch { return match[1] }
+  try {
+    return decodeURIComponent(match[1])
+  } catch {
+    return match[1]
+  }
 }
 
 function articleLink(post) {
   return `#/noticias/${encodeURIComponent(post.slug)}`
 }
 
+function navigationSection() {
+  return (
+    { '#noticias': 'news', '#projetos': 'projects', '#sobre': 'about' }[window.location.hash] ||
+    'home'
+  )
+}
+
 function App() {
   const [slug, setSlug] = useState(articleSlug)
+  const [activeSection, setActiveSection] = useState(navigationSection)
   useEffect(() => {
-    const update = () => { setSlug(articleSlug()); setView('public') }
+    const update = () => {
+      setSlug(articleSlug())
+      setView('public')
+      setActiveSection(navigationSection())
+    }
     window.addEventListener('hashchange', update)
     return () => window.removeEventListener('hashchange', update)
   }, [])
@@ -37,6 +53,8 @@ function App() {
   const [view, setView] = useState('public')
   const { session, status, notice, signIn, signOut, updateUser, retryRestore } = useSession()
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [featuredIndex, setFeaturedIndex] = useState(0)
+  useEffect(() => setFeaturedIndex(0), [posts])
 
   useEffect(() => {
     if (slug) return
@@ -63,7 +81,10 @@ function App() {
     // Debounce typing and cancel obsolete requests so older results cannot replace newer ones.
     setLoading(true)
     const timeout = setTimeout(loadPosts, search ? 300 : 0)
-    return () => { clearTimeout(timeout); controller.abort() }
+    return () => {
+      clearTimeout(timeout)
+      controller.abort()
+    }
   }, [search, categoryId, page, retry, slug])
 
   useEffect(() => {
@@ -73,8 +94,12 @@ function App() {
         if (!response.ok) throw new Error('Categorias indisponíveis')
         return response.json()
       })
-      .then((result) => { if (!controller.signal.aborted) setCategories(Array.isArray(result) ? result : []) })
-      .catch(() => { if (!controller.signal.aborted) setCategoriesError(true) })
+      .then((result) => {
+        if (!controller.signal.aborted) setCategories(Array.isArray(result) ? result : [])
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setCategoriesError(true)
+      })
     return () => controller.abort()
   }, [])
 
@@ -90,10 +115,28 @@ function App() {
   }, [])
 
   const canManage = ['ADMIN', 'EDITOR'].includes(session?.user?.role)
-  function logout() { signOut(); setView('public') }
-  const sessionNotice = notice && <p role="status" className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-center text-sm text-amber-900">{notice}</p>
+  function logout() {
+    signOut()
+    setView('public')
+  }
+  const sessionNotice = notice && (
+    <p
+      role="status"
+      className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-center text-sm text-amber-900"
+    >
+      {notice}
+    </p>
+  )
 
-  const featuredPost = !loading && !error && !search && !categoryId && page === 1 ? posts[0] : null
+  const featuredPosts =
+    !loading && !error && !search && !categoryId && page === 1 ? posts.slice(0, 3) : []
+  const currentFeaturedIndex = Math.min(featuredIndex, Math.max(0, featuredPosts.length - 1))
+  const featuredPost = featuredPosts[currentFeaturedIndex]
+
+  function focusSearch() {
+    document.getElementById('noticias')?.scrollIntoView?.({ behavior: 'smooth' })
+    document.getElementById('portal-search')?.focus({ preventScroll: true })
+  }
 
   function formatDate(date) {
     if (!date || Number.isNaN(new Date(date).getTime())) return 'Data não informada'
@@ -109,12 +152,34 @@ function App() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5 text-slate-900">
         <section className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8">
-          <h1 className="text-2xl font-black">Portal <span className="text-red-700">138</span></h1>
-          {status === 'checking' ? <p role="status" className="mt-4 text-slate-600">Verificando sua sessão…</p> : <>
-            <p role="alert" className="mt-4 leading-7 text-slate-600">Não foi possível verificar sua sessão. Tente novamente ou continue sem entrar.</p>
-            <button type="button" onClick={retryRestore} className="mt-5 w-full rounded-lg bg-red-700 px-4 py-3 font-bold text-white">Tentar novamente</button>
-            <button type="button" onClick={logout} className="mt-3 w-full rounded-lg border border-slate-300 px-4 py-3 font-bold text-slate-700">Continuar sem entrar</button>
-          </>}
+          <h1 className="text-2xl font-black">
+            Portal <span className="text-red-700">138</span>
+          </h1>
+          {status === 'checking' ? (
+            <p role="status" className="mt-4 text-slate-600">
+              Verificando sua sessão…
+            </p>
+          ) : (
+            <>
+              <p role="alert" className="mt-4 leading-7 text-slate-600">
+                Não foi possível verificar sua sessão. Tente novamente ou continue sem entrar.
+              </p>
+              <button
+                type="button"
+                onClick={retryRestore}
+                className="mt-5 w-full rounded-lg bg-red-700 px-4 py-3 font-bold text-white"
+              >
+                Tentar novamente
+              </button>
+              <button
+                type="button"
+                onClick={logout}
+                className="mt-3 w-full rounded-lg border border-slate-300 px-4 py-3 font-bold text-slate-700"
+              >
+                Continuar sem entrar
+              </button>
+            </>
+          )}
         </section>
       </main>
     )
@@ -154,264 +219,298 @@ function App() {
     )
   }
 
-  if (slug) return <Article key={slug} slug={slug} session={session} sessionNotice={sessionNotice} onLogin={() => setView('login')} onLogout={logout} onProfile={() => setView('profile')} onAdmin={() => setView('admin')} />
+  if (slug)
+    return (
+      <Article
+        key={slug}
+        slug={slug}
+        session={session}
+        sessionNotice={sessionNotice}
+        onLogin={() => setView('login')}
+        onLogout={logout}
+        onProfile={() => setView('profile')}
+        onAdmin={() => setView('admin')}
+      />
+    )
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <a href="#conteudo" className="sr-only z-50 rounded-lg bg-white p-3 font-bold text-red-700 focus:not-sr-only focus:fixed focus:left-4 focus:top-4">Pular para o conteúdo</a>
-      {/* Barra superior */}
-      <div className="bg-red-700 px-4 py-2 text-center text-sm font-medium text-white">
-        Portal 138 · Informação, educação e comunidade
-      </div>
-
-      {/* Cabeçalho */}
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-4 md:px-8">
-          <a href="#" className="flex shrink-0 items-center gap-2" aria-label="Portal 138 - Início">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-700 text-xl font-black text-white shadow-sm">
-              138
-            </div>
-
-            <div>
-              <h1 className="text-lg font-black tracking-tight sm:text-xl">
-                Portal <span className="text-red-700">138</span>
-              </h1>
-              <p className="hidden text-xs text-slate-500 sm:block">
-                Notícias da comunidade escolar
-              </p>
-            </div>
-          </a>
-
-          <nav className="hidden items-center gap-7 text-sm font-semibold md:flex">
-            <a href="#inicio" className="transition hover:text-red-700">
-              Início
-            </a>
-            <a href="#noticias" className="transition hover:text-red-700">
-              Notícias
-            </a>
-            <a href="#projetos" className="transition hover:text-red-700">
-              Projetos
-            </a>
-            <a href="#sobre" className="transition hover:text-red-700">
-              Sobre
-            </a>
-          </nav>
-
-          <div className="flex items-center gap-2">
-            <AccountMenu session={session} onLogin={() => setView('login')} onLogout={logout} onProfile={() => setView('profile')} onAdmin={() => setView('admin')} />
-            <a
-              href="#noticias"
-              className="hidden rounded-lg bg-red-700 px-3 py-2.5 sm:inline-flex text-sm font-bold text-white transition hover:bg-red-800 sm:px-4"
-            >
-              Explorar
-            </a>
-          </div>
-        </div>
-        <nav aria-label="Navegação principal no celular" className="flex gap-6 overflow-x-auto border-t border-slate-100 px-5 py-3 text-sm font-semibold md:hidden">
-          <a href="#inicio" className="hover:text-red-700">Início</a>
-          <a href="#noticias" className="hover:text-red-700">Notícias</a>
-          <a href="#projetos" className="hover:text-red-700">Projetos</a>
-          <a href="#sobre" className="hover:text-red-700">Sobre</a>
-        </nav>
-      </header>
-
+    <div className="portal-home">
+      <a href="#conteudo" className="portal-skip">
+        Pular para o conteúdo
+      </a>
+      <PortalHeader
+        session={session}
+        onLogin={() => setView('login')}
+        onLogout={logout}
+        onProfile={() => setView('profile')}
+        onAdmin={() => setView('admin')}
+        onSearch={focusSearch}
+        active={activeSection}
+      />
       {sessionNotice}
       <main id="conteudo">
-        {/* Destaque principal */}
-        <section id="inicio" className="overflow-hidden bg-red-50">
-          <div className="mx-auto grid max-w-7xl items-center gap-10 px-5 py-16 md:grid-cols-2 md:px-8 md:py-24">
-            <div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-red-700">
-                <span className="h-2 w-2 rounded-full bg-red-600" />
-                Nosso espaço, nossas histórias
-              </span>
-
-              <h2 className="mt-6 max-w-xl text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-                A vida escolar em{' '}
-                <span className="text-red-700">destaque.</span>
-              </h2>
-
-              <p className="mt-5 max-w-lg text-base leading-7 text-slate-600 md:text-lg">
-                Acompanhe notícias, projetos, atividades e acontecimentos
-                que fazem parte da comunidade do SESI 138.
-              </p>
-
-              <a
-                href="#noticias"
-                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-red-700 px-6 py-3.5 font-bold text-white shadow-lg shadow-red-700/20 transition hover:-translate-y-0.5 hover:bg-red-800"
-              >
-                Ver últimas notícias
-                <span aria-hidden="true">→</span>
-              </a>
-
-              <div className="mt-8 flex items-center gap-3 text-sm text-slate-500">
-                <span className="h-1 w-8 rounded-full bg-red-700" />
-                Informação que aproxima nossa comunidade
+        <section id="inicio" className="portal-hero-section" aria-label="Destaques do Portal 138">
+          <div className="portal-container">
+            <div className="portal-hero">
+              <div className="portal-hero-copy" aria-live="polite">
+                <p className="portal-eyebrow">
+                  {featuredPost
+                    ? `Em destaque · ${featuredPost.category?.name || 'Notícias'}`
+                    : 'Comunidade escolar · SESI 138'}
+                </p>
+                <h1>
+                  {featuredPost ? (
+                    featuredPost.title
+                  ) : (
+                    <>
+                      A vida escolar
+                      <br />
+                      em destaque.
+                    </>
+                  )}
+                </h1>
+                <p className="portal-hero-summary">
+                  {featuredPost
+                    ? featuredPost.excerpt || featuredPost.content
+                    : 'Notícias, projetos e conquistas de quem faz parte da nossa comunidade. Conheça as histórias do Portal 138.'}
+                </p>
+                <a
+                  className="portal-button portal-button-white"
+                  href={featuredPost ? articleLink(featuredPost) : '#noticias'}
+                >
+                  {featuredPost ? 'Ler notícia' : 'Ver últimas notícias'}{' '}
+                  <span aria-hidden="true">→</span>
+                </a>
+              </div>
+              <div className="portal-hero-image">
+                <NewsImage
+                  key={featuredPost?.coverImage || 'hero-fallback'}
+                  src={featuredPost?.coverImage}
+                  hero
+                />
               </div>
             </div>
-
-            <aside className="overflow-hidden rounded-2xl border border-red-100 bg-white shadow-lg">
-              {featuredPost ? (
-                <>
-                  {featuredPost.coverImage && <img src={featuredPost.coverImage} alt="" className="aspect-video w-full object-cover" fetchPriority="high" />}
-                  <div className="p-6 sm:p-8">
-                    <p className="text-xs font-bold uppercase tracking-widest text-red-700">Em destaque · {featuredPost.category?.name || 'Notícias'}</p>
-                    <h3 className="mt-4 text-2xl font-black leading-tight sm:text-3xl">{featuredPost.title}</h3>
-                    <p className="mt-4 line-clamp-3 leading-7 text-slate-600">{featuredPost.excerpt || featuredPost.content}</p>
-                    <a href={articleLink(featuredPost)} className="mt-6 inline-flex font-bold text-red-700 hover:underline">Ler notícia <span aria-hidden="true"> →</span></a>
+            <div className="portal-hero-caption">
+              <span>INFORMAÇÃO, EDUCAÇÃO E COMUNIDADE</span>
+              {featuredPosts.length > 1 ? (
+                <div className="portal-slider-controls" aria-label="Selecionar destaque">
+                  <button
+                    type="button"
+                    aria-label="Destaque anterior"
+                    onClick={() =>
+                      setFeaturedIndex(
+                        (currentFeaturedIndex + featuredPosts.length - 1) % featuredPosts.length,
+                      )
+                    }
+                  >
+                    ←
+                  </button>
+                  <div className="portal-slider-dots">
+                    {featuredPosts.map((post, index) => (
+                      <button
+                        key={post.id}
+                        type="button"
+                        aria-label={`Ir para destaque ${index + 1}`}
+                        aria-pressed={currentFeaturedIndex === index}
+                        onClick={() => setFeaturedIndex(index)}
+                      />
+                    ))}
                   </div>
-                </>
-              ) : (
-                <div className="p-8 sm:p-12">
-                  <p className="text-xs font-bold uppercase tracking-widest text-red-700">Comunidade SESI 138</p>
-                  <p className="mt-6 text-3xl font-black leading-tight">Histórias que aproximam.</p>
-                  <p className="mt-4 leading-7 text-slate-600">Um olhar sobre os projetos, as conquistas e as pessoas que fazem parte da nossa escola.</p>
-                  <a href="#noticias" className="mt-6 inline-flex font-bold text-red-700 hover:underline">Explorar notícias →</a>
+                  <span className="portal-slide-count">
+                    {String(currentFeaturedIndex + 1).padStart(2, '0')} /{' '}
+                    {String(featuredPosts.length).padStart(2, '0')}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Próximo destaque"
+                    onClick={() =>
+                      setFeaturedIndex((currentFeaturedIndex + 1) % featuredPosts.length)
+                    }
+                  >
+                    →
+                  </button>
                 </div>
+              ) : (
+                <span className="portal-caption-detail">NOSSO ESPAÇO. NOSSAS HISTÓRIAS.</span>
               )}
-            </aside>
+            </div>
           </div>
         </section>
 
-        {/* Notícias */}
-        <section id="noticias" className="mx-auto max-w-7xl px-5 py-16 md:px-8 md:py-20">
-          <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
+        <section className="portal-quick-section" aria-label="Acessos rápidos">
+          <div className="portal-container portal-quick-grid">
+            <a href="#noticias" className="portal-quick-link">
+              <PortalIcon name="news" />
+              <span>
+                <strong>Notícias da escola</strong>
+                <small>Acompanhe o que acontece</small>
+              </span>
+              <span aria-hidden="true">
+                <PortalIcon name="arrow" />
+              </span>
+            </a>
+            <a href="#projetos" className="portal-quick-link">
+              <PortalIcon name="projects" />
+              <span>
+                <strong>Projetos e ideias</strong>
+                <small>Conhecimento em movimento</small>
+              </span>
+              <span aria-hidden="true">
+                <PortalIcon name="arrow" />
+              </span>
+            </a>
+            <a href="#sobre" className="portal-quick-link">
+              <PortalIcon name="community" />
+              <span>
+                <strong>Nossa comunidade</strong>
+                <small>Conheça o Portal 138</small>
+              </span>
+              <span aria-hidden="true">
+                <PortalIcon name="arrow" />
+              </span>
+            </a>
+          </div>
+        </section>
+
+        <section id="noticias" className="portal-news-section portal-container">
+          <div className="portal-section-heading">
             <div>
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-red-700">
-                Fique por dentro
-              </p>
-
-              <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-                Últimas notícias
+              <p className="portal-eyebrow">ACONTECE NO 138</p>
+              <h2>
+                Últimas notícias<span aria-hidden="true">.</span>
               </h2>
-
-              <p className="mt-3 max-w-xl leading-7 text-slate-500">
-                Confira as novidades e os acontecimentos da nossa comunidade.
-              </p>
             </div>
-
-            <label className="w-full sm:max-w-xs">
+            <p>
+              As novidades e as histórias
+              <br className="portal-desktop-break" /> que conectam a nossa escola.
+            </p>
+          </div>
+          <div className="portal-news-tools">
+            <label className="portal-search-field" htmlFor="portal-search">
               <span className="sr-only">Pesquisar notícias</span>
+              <PortalIcon name="search" />
               <input
+                id="portal-search"
                 type="search"
                 value={search}
-                onChange={(event) => { setSearch(event.target.value); setPage(1) }}
-                placeholder="Pesquisar notícias..."
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none transition placeholder:text-slate-400 focus:border-red-500 focus:ring-4 focus:ring-red-100"
+                onChange={(event) => {
+                  setSearch(event.target.value)
+                  setPage(1)
+                }}
+                placeholder="O que você procura?"
               />
             </label>
-          </div>
-
-          <div className="mt-6 flex flex-wrap items-end gap-4">
-            <label className="flex w-full flex-col gap-2 text-sm font-bold sm:w-auto">
+            <label className="portal-category-field">
               Categoria
-              <select value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setPage(1) }} className="rounded-xl border border-slate-200 bg-white px-4 py-3 font-normal">
+              <select
+                value={categoryId}
+                onChange={(event) => {
+                  setCategoryId(event.target.value)
+                  setPage(1)
+                }}
+              >
                 <option value="">Todas as categorias</option>
-                {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
               </select>
             </label>
-            {(search || categoryId) && <button type="button" onClick={() => { setSearch(''); setCategoryId(''); setPage(1) }} className="rounded-lg px-3 py-3 text-sm font-bold text-red-700 hover:bg-red-50">Limpar filtros</button>}
-            {categoriesError && <p className="text-sm text-slate-500">Categorias indisponíveis no momento. A busca continua disponível.</p>}
+            {(search || categoryId) && (
+              <button
+                type="button"
+                className="portal-clear"
+                onClick={() => {
+                  setSearch('')
+                  setCategoryId('')
+                  setPage(1)
+                }}
+              >
+                Limpar filtros <span aria-hidden="true">×</span>
+              </button>
+            )}
           </div>
-          <p role="status" className="mt-4 text-sm text-slate-500">{loading ? 'Carregando notícias…' : error ? 'Notícias indisponíveis' : `${pagination.total} notícia(s) encontrada(s)`}</p>
-          <div className="mt-6" aria-busy={loading}>
+          {categoriesError && (
+            <p className="portal-helper">
+              Categorias indisponíveis no momento. A busca continua disponível.
+            </p>
+          )}
+          <p role="status" className="portal-results-count">
+            {loading
+              ? 'Carregando notícias…'
+              : error
+                ? 'Notícias indisponíveis'
+                : `${pagination.total} notícia(s) encontrada(s)`}
+          </p>
+          <div aria-busy={loading}>
             {loading ? (
-              <div className="grid gap-6 md:grid-cols-3">
+              <div className="portal-news-grid" aria-label="Carregando notícias">
                 {[1, 2, 3].map((item) => (
-                  <div
-                    key={item}
-                    className="animate-pulse overflow-hidden rounded-2xl border border-slate-100"
-                  >
-                    <div className="h-48 bg-slate-100" />
-                    <div className="space-y-3 p-5">
-                      <div className="h-4 w-1/3 rounded bg-slate-100" />
-                      <div className="h-6 rounded bg-slate-100" />
-                      <div className="h-4 rounded bg-slate-100" />
-                    </div>
+                  <div key={item} className="portal-news-skeleton">
+                    <div />
+                    <span />
+                    <span />
+                    <span />
                   </div>
                 ))}
               </div>
             ) : error ? (
-              <div className="rounded-2xl border border-red-200 bg-red-50 px-6 py-10 text-center">
-                <p className="font-bold text-red-800">
-                  Não foi possível carregar as notícias.
-                </p>
-                <p className="mt-2 text-sm text-red-700">{error}</p>
+              <div className="portal-state">
+                <PortalIcon name="news" />
+                <h3>Não foi possível carregar as notícias.</h3>
+                <p>{error}</p>
                 <button
+                  type="button"
+                  className="portal-button"
                   onClick={() => setRetry((value) => value + 1)}
-                  className="mt-5 rounded-lg bg-red-700 px-5 py-2.5 font-bold text-white hover:bg-red-800"
                 >
                   Tentar novamente
                 </button>
               </div>
             ) : posts.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-red-200 bg-red-50/50 px-6 py-14 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-red-100 text-3xl">
-                  {search || categoryId ? '⌕' : '📰'}
-                </div>
-
-                <h3 className="mt-5 text-xl font-black">
+              <div className="portal-state">
+                <PortalIcon name={search || categoryId ? 'search' : 'news'} />
+                <h3>
                   {search || categoryId
                     ? 'Nenhuma notícia encontrada'
                     : 'Em breve, novas histórias'}
                 </h3>
-
-                <p className="mx-auto mt-3 max-w-md leading-7 text-slate-600">
+                <p>
                   {search || categoryId
                     ? 'Tente pesquisar usando outras palavras.'
                     : 'Ainda não há notícias publicadas. Assim que houver novidades, elas aparecerão aqui.'}
                 </p>
               </div>
             ) : (
-              <div className="grid items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="portal-news-grid">
                 {posts.map((post) => (
-                  <article
-                    key={post.id}
-                    id={`noticia-${post.id}`}
-                    className="group min-w-0 scroll-mt-44 overflow-hidden rounded-2xl border border-slate-200 bg-white transition duration-300 hover:-translate-y-1 hover:border-red-200 hover:shadow-xl hover:shadow-red-900/5"
-                  >
-                    {post.coverImage ? (
-                      <img
-                        src={post.coverImage}
-                        alt=""
-                        loading="lazy"
-                        className="h-52 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
-                      />
-                    ) : (
-                      <div className="flex h-52 items-center justify-center bg-gradient-to-br from-red-100 to-red-50">
-                        <span className="text-5xl font-black text-red-700/70">
-                          138
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="p-6">
-                      <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
-                        <span className="rounded-full bg-red-100 px-3 py-1 text-red-700">
-                          {post.category?.name || 'Notícia'}
-                        </span>
-                        <span className="text-slate-400">
-                          {formatDate(post.publishedAt || post.createdAt)}
-                        </span>
-                      </div>
-
-                      <h3 className="mt-4 text-xl font-black leading-snug transition group-hover:text-red-700">
-                        <a href={articleLink(post)} className="hover:underline">{post.title}</a>
+                  <article key={post.id} id={`noticia-${post.id}`} className="portal-news-card">
+                    <a
+                      href={articleLink(post)}
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="portal-card-cover"
+                    >
+                      <NewsImage key={post.coverImage || 'fallback'} src={post.coverImage} />
+                    </a>
+                    <div className="portal-card-body">
+                      <p className="portal-card-category">{post.category?.name || 'Notícia'}</p>
+                      <time dateTime={post.publishedAt || post.createdAt || undefined}>
+                        {formatDate(post.publishedAt || post.createdAt)}
+                      </time>
+                      <h3>
+                        <a href={articleLink(post)}>{post.title}</a>
                       </h3>
-
-                      <p className="mt-3 line-clamp-3 leading-7 text-slate-600">
-                        {post.excerpt || post.content}
-                      </p>
-
-                      <a href={articleLink(post)} className="mt-4 inline-flex rounded-lg px-1 py-2 font-bold text-red-700 hover:underline">Ler notícia completa →</a>
-
+                      <p className="portal-card-excerpt">{post.excerpt || post.content}</p>
+                      <a href={articleLink(post)} className="portal-card-read">
+                        Ler notícia completa →
+                      </a>
                       {post.author?.name && (
-                        <p className="mt-5 border-t border-slate-100 pt-4 text-sm text-slate-500">
-                          Por <span className="font-semibold text-slate-700">{post.author.name}</span>
+                        <p className="portal-card-author">
+                          Por <strong>{post.author.name}</strong>
                         </p>
                       )}
-
-
                     </div>
                   </article>
                 ))}
@@ -419,116 +518,229 @@ function App() {
             )}
           </div>
           {!loading && !error && pagination.totalPages > 1 && (
-            <nav aria-label="Paginação das notícias" className="mt-8 flex items-center justify-center gap-4">
-              <button disabled={page === 1} onClick={() => setPage((value) => value - 1)} className="rounded-lg border border-slate-200 px-4 py-3 font-bold disabled:opacity-40">Anterior</button>
-              <span className="text-sm text-slate-600">Página {page} de {pagination.totalPages}</span>
-              <button disabled={page >= pagination.totalPages} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-slate-200 px-4 py-3 font-bold disabled:opacity-40">Próxima</button>
+            <nav aria-label="Paginação das notícias" className="portal-pagination">
+              <button
+                type="button"
+                disabled={page === 1}
+                onClick={() => setPage((value) => value - 1)}
+              >
+                Anterior
+              </button>
+              <span>
+                Página {page} de {pagination.totalPages}
+              </span>
+              <button
+                type="button"
+                disabled={page >= pagination.totalPages}
+                onClick={() => setPage((value) => value + 1)}
+              >
+                Próxima
+              </button>
             </nav>
           )}
         </section>
 
-        {/* Projetos */}
-        <section id="projetos" className="bg-slate-50">
-          <div className="mx-auto max-w-7xl px-5 py-16 md:px-8 md:py-20">
-            <div className="max-w-2xl">
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-red-700">
-                Além da sala de aula
-              </p>
-              <h2 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
-                Ideias que ganham vida.
-              </h2>
-              <p className="mt-4 leading-7 text-slate-600">
-                Um espaço para valorizar projetos, iniciativas, atividades e
-                talentos que fazem parte do dia a dia escolar.
+        <section id="projetos" className="portal-projects-section">
+          <div className="portal-container">
+            <div className="portal-section-heading">
+              <div>
+                <p className="portal-eyebrow">CONHECIMENTO QUE TRANSFORMA</p>
+                <h2>
+                  Além da sala de aula<span aria-hidden="true">.</span>
+                </h2>
+              </div>
+              <p>
+                Ideias que saem do papel
+                <br className="portal-desktop-break" /> e ganham vida na comunidade.
               </p>
             </div>
-
-            <div className="mt-9 grid gap-5 sm:grid-cols-3">
+            <div className="portal-project-grid">
               {[
                 {
                   number: '01',
+                  icon: 'projects',
                   title: 'Projetos escolares',
-                  text: 'Conheça iniciativas e trabalhos desenvolvidos pelos estudantes.',
+                  text: 'Iniciativas, experiências e trabalhos que colocam o aprendizado em prática.',
                 },
                 {
                   number: '02',
+                  icon: 'calendar',
                   title: 'Eventos e atividades',
-                  text: 'Acompanhe os acontecimentos e as experiências da comunidade.',
+                  text: 'Encontros e acontecimentos que fazem parte do nosso dia a dia escolar.',
                 },
                 {
                   number: '03',
+                  icon: 'idea',
                   title: 'Ideias e criatividade',
-                  text: 'Dê visibilidade às ideias que transformam o ambiente escolar.',
+                  text: 'Talentos e novas perspectivas de quem transforma a nossa comunidade.',
                 },
               ].map((item) => (
-                <article
-                  key={item.number}
-                  className="rounded-2xl border border-slate-200 bg-white p-6 transition hover:border-red-200 hover:shadow-lg"
-                >
-                  <span className="text-sm font-black tracking-widest text-red-700">
-                    {item.number}
-                  </span>
-                  <h3 className="mt-4 text-lg font-black">{item.title}</h3>
-                  <p className="mt-2 leading-7 text-slate-600">{item.text}</p>
+                <article key={item.number} className="portal-project-card">
+                  <div className="portal-project-top">
+                    <PortalIcon name={item.icon} />
+                    <span>{item.number}</span>
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{item.text}</p>
+                  <a href="#noticias" aria-label={`Acompanhar notícias: ${item.title}`}>
+                    Acompanhar notícias <span aria-hidden="true">→</span>
+                  </a>
                 </article>
               ))}
             </div>
           </div>
         </section>
-
-        {/* Sobre */}
-        <section id="sobre" className="mx-auto max-w-7xl px-5 py-16 md:px-8">
-          <div className="rounded-3xl bg-red-700 px-6 py-10 text-white sm:px-10 md:flex md:items-center md:justify-between md:gap-10 md:py-12">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.2em] text-red-100">
-                Nossa comunidade
-              </p>
-              <h2 className="mt-3 text-3xl font-black">
-                Este espaço também é seu.
-              </h2>
-              <p className="mt-3 max-w-2xl leading-7 text-red-100">
-                O Portal 138 reúne notícias, projetos e acontecimentos
-                relacionados à comunidade escolar do SESI 138.
-              </p>
-            </div>
-
-            <a
-              href="#inicio"
-              className="mt-7 inline-flex shrink-0 rounded-xl bg-white px-5 py-3 font-bold text-red-700 transition hover:bg-red-50 md:mt-0"
-            >
-              Voltar ao início ↑
+        <section id="sobre" className="portal-about-section portal-container">
+          <div className="portal-about-mark" aria-hidden="true">
+            <span>138</span>
+            <small>NOSSA COMUNIDADE</small>
+          </div>
+          <div className="portal-about-copy">
+            <p className="portal-eyebrow">SOBRE O PORTAL</p>
+            <h2>Este espaço também é seu.</h2>
+            <p>
+              O Portal 138 reúne notícias, projetos e acontecimentos relacionados à comunidade
+              escolar do SESI 138. Um lugar para dar voz às nossas ideias e valorizar as histórias
+              de quem faz a escola acontecer.
+            </p>
+            <a href="#inicio" className="portal-text-link">
+              Voltar ao início <span aria-hidden="true">↑</span>
             </a>
           </div>
         </section>
       </main>
-
-      {/* Botão voltar ao topo */}
-      <button
-        type="button"
-        aria-label="Voltar ao topo"
-        title="Voltar ao topo"
-        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        className={`fixed bottom-6 right-6 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-red-700 text-2xl font-bold text-white shadow-lg transition-all duration-300 hover:-translate-y-1 hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-200 ${
-          showScrollTop
-            ? 'translate-y-0 opacity-100'
-            : 'pointer-events-none translate-y-4 opacity-0'
-        }`}
-        tabIndex={showScrollTop ? 0 : -1}
-      >
-        ↑
-      </button>
-
-      {/* Rodapé */}
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 py-7 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between md:px-8">
-          <p>
-            <span className="font-black text-slate-900">Portal 138</span>
-            {' '}· Notícias e comunidade escolar
-          </p>
-          <p>Feito para valorizar as histórias da nossa comunidade.</p>
-        </div>
-      </footer>
+      <PortalFooter />
+      {showScrollTop && (
+        <button
+          type="button"
+          className="portal-scroll-top"
+          aria-label="Voltar ao topo"
+          title="Voltar ao topo"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        >
+          ↑
+        </button>
+      )}
     </div>
+  )
+}
+
+function NewsImage({ src, hero = false }) {
+  const [failed, setFailed] = useState(false)
+  return src && !failed ? (
+    <img
+      src={src}
+      alt=""
+      width="1600"
+      height="1000"
+      loading={hero ? 'eager' : 'lazy'}
+      fetchPriority={hero ? 'high' : 'auto'}
+      onError={() => setFailed(true)}
+    />
+  ) : (
+    <PortalIllustration compact={!hero} />
+  )
+}
+
+function PortalIllustration({ compact }) {
+  return (
+    <svg
+      className={compact ? 'portal-art portal-art-compact' : 'portal-art'}
+      viewBox="0 0 680 480"
+      fill="none"
+      aria-hidden="true"
+    >
+      <rect width="680" height="480" fill="#f3ede8" />
+      <path d="M400 0h280v480H180z" fill="#e9ddd4" />
+      <circle cx="533" cy="95" r="138" fill="#e30613" opacity=".12" />
+      <path d="M60 391h566M87 410h512" stroke="#cdbeb2" strokeWidth="2" />
+      <path d="M138 330V162l184-54 184 54v168" fill="#fff" stroke="#bca99b" strokeWidth="3" />
+      <path d="M111 172l211-64 211 64" stroke="#e30613" strokeWidth="12" />
+      <path d="M173 203h67v62h-67zM403 203h67v62h-67z" fill="#efe8e3" />
+      <path d="M267 183h110v147H267z" fill="#e30613" />
+      <path d="M322 183v147M283 253h13M348 253h13" stroke="#fff" strokeWidth="3" />
+      <path d="M156 331h331v19H156zM139 351h366v19H139z" fill="#cbb6a8" />
+      <path d="M173 234h67M207 203v62M403 234h67M437 203v62" stroke="#c5b3a6" strokeWidth="2" />
+      <rect
+        x="475"
+        y="288"
+        width="102"
+        height="79"
+        rx="3"
+        fill="#fff"
+        stroke="#e30613"
+        strokeWidth="3"
+      />
+      <path d="M488 308h76M488 320h76M488 332h47" stroke="#d3c4b8" strokeWidth="3" />
+      <path d="M518 368v23M497 393h46" stroke="#e30613" strokeWidth="5" />
+      <circle cx="107" cy="273" r="27" fill="#64766c" />
+      <circle cx="91" cy="248" r="24" fill="#7c8c77" />
+      <circle cx="120" cy="243" r="29" fill="#81917d" />
+      <path d="M108 270v111" stroke="#756458" strokeWidth="6" />
+      <path d="M88 380h40l-5 11H93z" fill="#d2b6a3" />
+      <path d="M570 374l17-38 18 38M578 354h19" stroke="#e30613" strokeWidth="3" />
+      <circle cx="590" cy="299" r="12" fill="#e30613" opacity=".2" />
+      <path
+        d="M126 125l-22-22M550 190l23-9M491 90l6-26"
+        stroke="#e30613"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function PortalIcon({ name }) {
+  const paths = {
+    news: (
+      <>
+        <path d="M5 5h14v14H5zM8 8h8M8 15h8M8 11h3M14 11h2" />
+        <path d="M3 9v11a1 1 0 0 0 1 1h15" />
+      </>
+    ),
+    projects: (
+      <>
+        <path d="M12 3l10 5-10 5L2 8l10-5zM5 10v7l7 4 7-4v-7M22 8v7" />
+      </>
+    ),
+    community: (
+      <>
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3 20v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M21 20v-3a6 6 0 0 0-4-5" />
+      </>
+    ),
+    calendar: (
+      <>
+        <rect x="4" y="5" width="16" height="16" rx="1" />
+        <path d="M4 10h16M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2" />
+      </>
+    ),
+    idea: (
+      <>
+        <path d="M9 18h6M10 21h4M8 13a6 6 0 1 1 8 0c-1.5 1-2 2-2 3h-4c0-1-.5-2-2-3z" />
+      </>
+    ),
+    search: (
+      <>
+        <circle cx="10" cy="10" r="6" />
+        <path d="M15 15l6 6" />
+      </>
+    ),
+    arrow: <path d="M6 18 18 6M6 6h12v12" />,
+  }
+  return (
+    <svg
+      className="portal-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths[name] || paths.news}
+    </svg>
   )
 }
 

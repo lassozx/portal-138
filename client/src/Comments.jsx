@@ -195,16 +195,16 @@ function Comments({ postId, session }) {
   return (
     <section
       aria-label="Comentários"
-      className="mt-5 border-t border-slate-100 pt-5"
+      className="portal-comments"
     >
-      <h4 className="text-base font-bold text-slate-900">
+      <h2 className="portal-comments-title">
         Comentários ({pagination.total})
-      </h4>
+      </h2>
 
       {error && (
         <p
           role="alert"
-          className="mt-3 rounded-lg bg-red-50 p-3 text-sm text-red-700"
+          className="portal-comments-notice portal-comments-notice--error"
         >
           {error}
         </p>
@@ -213,17 +213,17 @@ function Comments({ postId, session }) {
       {message && (
         <p
           role="status"
-          className="mt-3 rounded-lg bg-green-50 p-3 text-sm text-green-700"
+          className="portal-comments-notice portal-comments-notice--success"
         >
           {message}
         </p>
       )}
 
       {token ? (
-        <form onSubmit={handleSubmit} className="mt-4">
+        <form onSubmit={handleSubmit} className="portal-comments-form">
           <label
             htmlFor={`comment-content-${postId}`}
-            className="mb-2 block text-sm font-semibold text-slate-700"
+            className="portal-comments-label"
           >
             Escreva um comentário
           </label>
@@ -235,37 +235,37 @@ function Comments({ postId, session }) {
             maxLength={2000}
             rows={3}
             placeholder="Compartilhe sua opinião..."
-            className="w-full resize-y rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+            className="portal-comments-input"
           />
 
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <span className="text-xs text-slate-500">
+          <div className="portal-comments-form-actions">
+            <span className="portal-comments-counter">
               {content.length}/2000 caracteres
             </span>
 
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-lg bg-red-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+              className="portal-article-button"
             >
               {submitting ? 'Publicando...' : 'Publicar comentário'}
             </button>
           </div>
         </form>
       ) : (
-        <p className="mt-3 text-sm text-slate-600">
+        <p className="portal-comments-signin">
           Entre na sua conta para publicar comentários.
         </p>
       )}
 
-      <div className="mt-5 space-y-4">
+      <div className="portal-comments-list">
         {loading ? (
-          <p className="text-sm text-slate-500">
+          <p className="portal-comments-empty">
             Carregando comentários...
           </p>
         ) : comments.length === 0 ? (
           !error && (
-            <p className="text-sm text-slate-500">
+            <p className="portal-comments-empty">
               Ainda não há comentários. Seja o primeiro a comentar.
             </p>
           )
@@ -279,22 +279,25 @@ function Comments({ postId, session }) {
             return (
               <article
                 key={comment.id}
-                className="rounded-xl bg-slate-50 p-4"
+                className="portal-comments-item"
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-bold text-slate-900">
-                      {comment.author?.name || 'Usuário'}
-                    </p>
+                <div className="portal-comments-item-heading">
+                  <div className="portal-comments-person">
+                    <span className="portal-comments-avatar" aria-hidden="true">{(comment.author?.name || 'C').charAt(0).toUpperCase()}</span>
+                    <div>
+                      <p className="portal-comments-author">
+                        {comment.author?.name || 'Usuário'}
+                      </p>
 
-                    {comment.createdAt && (
-                      <time
-                        dateTime={comment.createdAt}
-                        className="mt-1 block text-xs text-slate-500"
-                      >
-                        {formatDate(comment.createdAt)}
-                      </time>
-                    )}
+                      {comment.createdAt && (
+                        <time
+                          dateTime={comment.createdAt}
+                          className="portal-comments-time"
+                        >
+                          {formatDate(comment.createdAt)}
+                        </time>
+                      )}
+                    </div>
                   </div>
 
                   {canDelete && (
@@ -302,7 +305,7 @@ function Comments({ postId, session }) {
                       type="button"
                       onClick={() => handleDelete(comment.id)}
                       disabled={deletingId === comment.id}
-                      className="text-xs font-semibold text-red-700 hover:text-red-900 disabled:opacity-50"
+                      className="portal-comments-delete"
                       aria-label={`Excluir comentário de ${comment.author?.name || 'Usuário'}`}
                     >
                       {deletingId === comment.id
@@ -312,7 +315,7 @@ function Comments({ postId, session }) {
                   )}
                 </div>
 
-                <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-slate-700">
+                <p className="portal-comments-text">
                   {comment.content}
                 </p>
               </article>
@@ -322,12 +325,12 @@ function Comments({ postId, session }) {
       </div>
 
       {!loading && pagination.page < pagination.totalPages && (
-        <div className="mt-5 text-center">
+        <div className="portal-comments-more">
           <button
             type="button"
             onClick={handleLoadMore}
             disabled={loadingMore}
-            className="rounded-lg border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="portal-article-button portal-article-button--outline"
           >
             {loadingMore ? 'Carregando...' : 'Carregar mais comentários'}
           </button>

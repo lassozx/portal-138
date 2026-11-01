@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { passwordValidationMessage } from './passwordValidation.js'
 
 const inputClass =
-  'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-red-600 focus:ring-2 focus:ring-red-100'
+  'mt-1 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100'
 
-const labelClass = 'block text-sm font-semibold text-slate-700'
+const labelClass = 'block text-sm font-semibold text-neutral-700'
 
 function Profile({ token, user, onBack, onUserUpdated }) {
   const [name, setName] = useState(user?.name || '')
@@ -111,17 +111,17 @@ function Profile({ token, user, onBack, onUserUpdated }) {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900 sm:px-6">
+    <main className="portal-internal min-h-screen bg-[#f5f5f5] px-4 py-10 text-neutral-900 sm:px-6">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <header className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 border-t-4 border-t-red-700 bg-white px-5 py-6 sm:px-6">
           <div>
             <p className="text-sm font-bold uppercase tracking-wider text-red-700">
               Portal 138
             </p>
-            <h1 className="mt-1 text-3xl font-black tracking-tight">
+            <h1 className="mt-1 text-3xl font-bold tracking-tight">
               Meu perfil
             </h1>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-neutral-600">
               Gerencie suas informações de acesso.
             </p>
           </div>
@@ -129,18 +129,18 @@ function Profile({ token, user, onBack, onUserUpdated }) {
           <button
             type="button"
             onClick={onBack}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold transition hover:bg-slate-100"
+            className="rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-sm font-bold transition hover:bg-neutral-100"
           >
             Voltar
           </button>
         </header>
 
-        <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="mb-6 rounded-lg border border-neutral-200 bg-white p-5">
           <h2 className="text-lg font-bold">Informações da conta</h2>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 E-mail
               </p>
               <p className="mt-1 break-all text-sm font-medium">
@@ -149,7 +149,7 @@ function Profile({ token, user, onBack, onUserUpdated }) {
             </div>
 
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
                 Perfil de acesso
               </p>
               <p className="mt-1 text-sm font-medium">
@@ -172,9 +172,9 @@ function Profile({ token, user, onBack, onUserUpdated }) {
           </div>
         )}
 
-        <section className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <section className="mb-6 rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
           <h2 className="text-lg font-bold">Alterar nome</h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-neutral-600">
             Atualize o nome exibido na sua conta.
           </p>
 
@@ -207,9 +207,9 @@ function Profile({ token, user, onBack, onUserUpdated }) {
           </form>
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
           <h2 className="text-lg font-bold">Alterar senha</h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-neutral-600">
             Use sua senha atual para cadastrar uma nova senha.
           </p>
 
@@ -246,7 +246,7 @@ function Profile({ token, user, onBack, onUserUpdated }) {
                 onChange={(event) => setNewPassword(event.target.value)}
                 className={inputClass}
               />
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-neutral-500">
                 Use pelo menos 8 caracteres. Acentos e emojis ocupam mais espaço no limite da senha.
               </p>
             </div>

@@ -38,7 +38,7 @@ it('acompanha a navegação entre a lista e a notícia sem recarregar', async ()
   await screen.findByRole('heading', { level: 1, name: post.title })
   window.history.pushState(null, '', '/#noticias')
   fireEvent(window, new Event('hashchange'))
-  await screen.findByText('Últimas notícias')
+  await screen.findByRole('heading', { name: 'Últimas notícias', exact: true })
 })
 
 it('exibe notícia indisponível quando a API retorna 404', async () => {
