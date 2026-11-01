@@ -21,6 +21,17 @@ const app = require('../src/app')
 const prisma = require('../src/config/prisma')
 const bcrypt = require('bcryptjs')
 
+const passwordsAtLimit = [
+  ['ASCII', 'a'.repeat(72)],
+  ['acentos', 'á'.repeat(36)],
+  ['emojis', '😀'.repeat(18)],
+]
+const passwordsAboveLimit = [
+  ['ASCII', 'a'.repeat(73)],
+  ['acentos', 'á'.repeat(36) + 'X'],
+  ['emojis', '😀'.repeat(18) + 'X'],
+]
+
 describe('POST /api/auth/register', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -64,6 +75,41 @@ describe('POST /api/auth/register', () => {
         }),
       })
     )
+  })
+
+  it.each(passwordsAboveLimit)('rejeita cadastro com senha de 73 bytes (%s) antes de gerar hash', async (_, password) => {
+    const response = await request(app).post('/api/auth/register').send({
+      name: 'Usuario Teste',
+      email: 'novo@exemplo.com',
+      password,
+    })
+
+    expect(response.status).toBe(400)
+    expect(response.body.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: ['password'] }),
+    ]))
+    expect(response.body.message).toContain('A senha é muito longa.')
+    expect(prisma.user.findUnique).not.toHaveBeenCalled()
+    expect(bcrypt.hash).not.toHaveBeenCalled()
+    expect(prisma.user.create).not.toHaveBeenCalled()
+  })
+
+  it.each(passwordsAtLimit)('aceita cadastro com senha de exatamente 72 bytes (%s)', async (_, password) => {
+    prisma.user.findUnique.mockResolvedValue(null)
+    prisma.user.create.mockResolvedValue({ id: 'usuario-teste-id', role: 'USER' })
+    bcrypt.hash.mockResolvedValue('hash-de-senha')
+
+    const response = await request(app).post('/api/auth/register').send({
+      name: 'Usuario Teste',
+      email: 'novo@exemplo.com',
+      password,
+    })
+
+    expect(response.status).toBe(201)
+    expect(bcrypt.hash).toHaveBeenCalledWith(password, 12)
+    expect(prisma.user.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ passwordHash: 'hash-de-senha' }),
+    }))
   })
 
   it('deve rejeitar um e-mail já cadastrado', async () => {
@@ -150,7 +196,7 @@ describe('POST /api/auth/login', () => {
     process.env.JWT_EXPIRES_IN = '1h'
   })
 
-  it('deve autenticar o usuário e retornar um JWT válido', async () => {
+  it.each(['SenhaSegura123', 'á'.repeat(36) + 'X'])('autentica e retorna JWT, inclusive para senha legada acima de 72 bytes (%s)', async (password) => {
     prisma.user.findUnique.mockResolvedValue({
       id: 'usuario-teste-id',
       name: 'Usuario Teste',
@@ -164,7 +210,7 @@ describe('POST /api/auth/login', () => {
       .post('/api/auth/login')
       .send({
         email: 'USUARIO@EXEMPLO.COM',
-        password: 'SenhaSegura123',
+        password,
       })
 
     expect(response.status).toBe(200)
@@ -177,6 +223,7 @@ describe('POST /api/auth/login', () => {
       role: 'USER',
     })
     expect(response.body.user).not.toHaveProperty('passwordHash')
+    expect(bcrypt.compare).toHaveBeenCalledWith(password, 'hash-de-senha')
 
     const decoded = jwt.verify(
       response.body.token,
@@ -529,7 +576,7 @@ describe('PUT /api/auth/profile', () => {
     expect(prisma.user.update).not.toHaveBeenCalled()
   })
 
-  it('deve alterar a senha quando a senha atual estiver correta', async () => {
+  it.each(['SenhaAtual123', 'á'.repeat(36) + 'X'])('altera a senha mesmo quando a senha atual é legada acima de 72 bytes (%s)', async (currentPassword) => {
     bcrypt.compare.mockResolvedValue(true)
     bcrypt.hash.mockResolvedValue('novo-hash-de-senha')
 
@@ -542,7 +589,7 @@ describe('PUT /api/auth/profile', () => {
       .put('/api/auth/profile')
       .set('Authorization', `Bearer ${token}`)
       .send({
-        currentPassword: 'SenhaAtual123',
+        currentPassword,
         newPassword: 'NovaSenhaSegura123',
       })
 
@@ -550,7 +597,7 @@ describe('PUT /api/auth/profile', () => {
     expect(response.body.message).toBe('Perfil atualizado com sucesso.')
 
     expect(bcrypt.compare).toHaveBeenCalledWith(
-      'SenhaAtual123',
+      currentPassword,
       'hash-senha-atual',
     )
 
@@ -567,6 +614,39 @@ describe('PUT /api/auth/profile', () => {
     )
 
     expect(response.body.user).not.toHaveProperty('passwordHash')
+  })
+
+  it.each(passwordsAboveLimit)('rejeita troca para senha de 73 bytes (%s) antes de gerar hash', async (_, newPassword) => {
+    const response = await request(app)
+      .put('/api/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ currentPassword: 'SenhaAtual123', newPassword })
+
+    expect(response.status).toBe(400)
+    expect(response.body.errors).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: ['newPassword'] }),
+    ]))
+    expect(response.body.message).toContain('A senha é muito longa.')
+    expect(bcrypt.compare).not.toHaveBeenCalled()
+    expect(bcrypt.hash).not.toHaveBeenCalled()
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it.each(passwordsAtLimit)('aceita troca para senha de exatamente 72 bytes (%s)', async (_, newPassword) => {
+    bcrypt.compare.mockResolvedValue(true)
+    bcrypt.hash.mockResolvedValue('novo-hash-de-senha')
+    prisma.user.update.mockResolvedValue(updatedUser)
+
+    const response = await request(app)
+      .put('/api/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ currentPassword: 'SenhaAtual123', newPassword })
+
+    expect(response.status).toBe(200)
+    expect(bcrypt.hash).toHaveBeenCalledWith(newPassword, 12)
+    expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: { passwordHash: 'novo-hash-de-senha' },
+    }))
   })
 
   it('deve retornar 401 quando não houver token', async () => {

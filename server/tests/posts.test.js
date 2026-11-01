@@ -134,7 +134,7 @@ describe('GET /api/posts', () => {
 
 })
 
-describe('GET /api/posts/admin', () => {
+describe('GET /api/admin/posts', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     process.env.JWT_SECRET = 'segredo-de-teste-jwt'
@@ -158,7 +158,7 @@ describe('GET /api/posts/admin', () => {
   }
 
   it('deve retornar 401 quando não houver token', async () => {
-    const response = await request(app).get('/api/posts/admin')
+    const response = await request(app).get('/api/admin/posts')
 
     expect(response.status).toBe(401)
     expect(prisma.post.findMany).not.toHaveBeenCalled()
@@ -169,7 +169,7 @@ describe('GET /api/posts/admin', () => {
     configurarUsuario('user-teste-id', 'USER')
 
     const response = await request(app)
-      .get('/api/posts/admin')
+      .get('/api/admin/posts')
       .set('Authorization', `Bearer ${criarToken('user-teste-id')}`)
 
     expect(response.status).toBe(403)
@@ -186,7 +186,7 @@ describe('GET /api/posts/admin', () => {
     prisma.post.count.mockResolvedValue(0)
 
     const response = await request(app)
-      .get('/api/posts/admin')
+      .get('/api/admin/posts')
       .set('Authorization', `Bearer ${criarToken(userId)}`)
 
     expect(response.status).toBe(200)
@@ -215,7 +215,7 @@ describe('GET /api/posts/admin', () => {
     prisma.post.count.mockResolvedValue(250)
 
     const response = await request(app)
-      .get('/api/posts/admin?page=2&limit=10')
+      .get('/api/admin/posts?page=2&limit=10')
       .set('Authorization', `Bearer ${criarToken('admin-teste-id')}`)
 
     expect(response.status).toBe(200)
@@ -261,6 +261,42 @@ describe('GET /api/posts/:slug', () => {
         }),
       })
     )
+  })
+
+  it('deve abrir uma notícia com slug admin sem autenticação', async () => {
+    prisma.post.findFirst.mockResolvedValue({
+      id: 'noticia-admin',
+      title: 'Admin',
+      slug: 'admin',
+      status: 'PUBLISHED',
+    })
+
+    const response = await request(app).get('/api/posts/admin')
+
+    expect(response.status).toBe(200)
+    expect(response.body.slug).toBe('admin')
+    expect(prisma.post.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          slug: 'admin',
+          status: 'PUBLISHED',
+          publishedAt: { lte: expect.any(Date) },
+        },
+      })
+    )
+    expect(prisma.user.findUnique).not.toHaveBeenCalled()
+    expect(prisma.post.findMany).not.toHaveBeenCalled()
+  })
+
+  it('deve retornar 404 para admin quando não há notícia publicada com esse slug', async () => {
+    prisma.post.findFirst.mockResolvedValue(null)
+
+    const response = await request(app).get('/api/posts/admin')
+
+    expect(response.status).toBe(404)
+    expect(response.body.message).toBe('Notícia não encontrada.')
+    expect(prisma.post.findMany).not.toHaveBeenCalled()
+    expect(prisma.post.count).not.toHaveBeenCalled()
   })
 
   it('deve retornar 404 quando a notícia não existe', async () => {

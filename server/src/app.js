@@ -3,6 +3,7 @@ const helmet = require('helmet')
 const cors = require('cors')
 const prisma = require('./config/prisma')
 const postsRoutes = require('./routes/posts.routes')
+const adminPostsRoutes = require('./routes/admin.posts.routes')
 const authRoutes = require('./routes/auth.routes')
 const categoriesRoutes = require('./routes/categories.routes')
 const commentsRoutes = require('./routes/comments.routes')
@@ -49,6 +50,8 @@ res.status(500).json({
 
 // Rotas de autenticação
 app.use('/api/auth', authRoutes)
+// Consulta administrativa separada dos slugs públicos das notícias
+app.use('/api/admin/posts', adminPostsRoutes)
 // Rotas públicas de notícias
 app.use('/api/posts', postsRoutes)
 app.use('/api/categories', categoriesRoutes)

@@ -16,7 +16,7 @@ category: null,
 
 function mockFetch() {
 return vi.fn(async (url, options = {}) => {
-if (url === '/api/posts/admin?limit=100') {
+if (url === '/api/admin/posts?limit=100') {
 return {
 ok: true,
 json: async () => ({ data: [mockPost] }),

@@ -190,6 +190,30 @@ describe('Login — autenticação e permissões', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
+  it.each(['á'.repeat(36) + 'X', '😀'.repeat(18) + 'X'])('não envia cadastro quando a senha excede 72 bytes (%s)', async (password) => {
+    render(<Login onLogin={onLogin} onBack={onBack} />)
+    preencherCadastro(password)
+    fireEvent.change(screen.getByLabelText('Senha'), { target: { value: password } })
+    fireEvent.click(screen.getByRole('button', { name: 'Criar minha conta' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('A senha é muito longa.')
+    expect(screen.getByLabelText('Senha')).toHaveValue(password)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it.each(['á'.repeat(36), '😀'.repeat(18)])('envia cadastro com senha de exatamente 72 bytes (%s)', async (password) => {
+    fetch.mockResolvedValue({ ok: true, json: async () => ({ user: { role: 'USER' } }) })
+    render(<Login onLogin={onLogin} onBack={onBack} />)
+    preencherCadastro(password)
+    fireEvent.change(screen.getByLabelText('Senha'), { target: { value: password } })
+    fireEvent.click(screen.getByRole('button', { name: 'Criar minha conta' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Conta criada com sucesso!')
+    expect(fetch).toHaveBeenCalledWith('/api/auth/register', expect.objectContaining({
+      body: JSON.stringify({ name: 'Maria Silva', email: 'maria@example.com', password }),
+    }))
+  })
+
   it('preserva os dados e permite corrigir um e-mail já cadastrado', async () => {
     fetch.mockResolvedValue({ ok: false, json: async () => ({ message: 'Este e-mail já está cadastrado.' }) })
     render(<Login onLogin={onLogin} onBack={onBack} />)
