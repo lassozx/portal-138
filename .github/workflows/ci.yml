@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Instalar dependências
+        run: npm ci
+      - name: Testar cliente
+        run: npm test
+      - name: Gerar build
+        run: npm run build
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: server
+    env:
+      DATABASE_URL: postgresql://portal138_ci:portal138_ci@localhost:5432/portal138_ci
+      JWT_SECRET: portal138-ci-only-secret-not-for-production
+      JWT_EXPIRES_IN: 1h
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: portal138_ci
+          POSTGRES_PASSWORD: portal138_ci
+          POSTGRES_DB: portal138_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U portal138_ci -d portal138_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Instalar dependências
+        run: npm ci
+      - name: Gerar cliente Prisma
+        run: npx --no-install prisma generate
+      - name: Aplicar migrações no banco de teste
+        run: npx --no-install prisma migrate deploy
+      - name: Testar API
+        run: npm test
