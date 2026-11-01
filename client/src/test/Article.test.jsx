@@ -4,26 +4,26 @@ import App from '../App.jsx'
 import Article from '../Article.jsx'
 
 const post = { id: 'p1', slug: 'feira', title: 'Feira de ciências', content: 'Experiências e descobertas da nossa escola.', author: { name: 'Ana' }, category: { name: 'Projetos' }, publishedAt: '2026-10-30T12:00:00Z' }
-function mockApi() {
+function mockApi(article = post) {
   vi.stubGlobal('fetch', vi.fn(async (url) => {
     if (url.startsWith('/api/comments/')) return { ok: true, json: async () => ({ comments: [], pagination: { total: 0, page: 1, totalPages: 0 } }) }
     if (url === '/api/categories') return { ok: true, json: async () => [] }
-    if (url.startsWith('/api/posts?')) return { ok: true, json: async () => ({ data: [post], pagination: { total: 1, totalPages: 1 } }) }
-    return { ok: true, json: async () => post }
+    if (url.startsWith('/api/posts?')) return { ok: true, json: async () => ({ data: [article], pagination: { total: 1, totalPages: 1 } }) }
+    return { ok: true, json: async () => article }
   }))
 }
 afterEach(() => { cleanup(); window.history.replaceState(null, '', '/'); vi.unstubAllGlobals() })
 
-it('abre diretamente uma URL compartilhada e carrega texto completo e comentários', async () => {
-  mockApi()
-  window.history.replaceState(null, '', '/#/noticias/feira')
+it.each(['feira', 'admin'])('abre diretamente a notícia %s e carrega texto completo e comentários', async (slug) => {
+  mockApi({ ...post, slug })
+  window.history.replaceState(null, '', `/#/noticias/${slug}`)
   render(<App />)
   expect(await screen.findByRole('heading', { level: 1, name: post.title })).toBeVisible()
   expect(screen.getByText(post.content)).toBeVisible()
   expect(screen.getByText('Ana')).toBeVisible()
   await screen.findByText('Ainda não há comentários. Seja o primeiro a comentar.')
   expect(document.title).toBe(`${post.title} | Portal 138`)
-  expect(fetch).toHaveBeenCalledWith('/api/posts/feira', expect.anything())
+  expect(fetch).toHaveBeenCalledWith(`/api/posts/${slug}`, expect.anything())
   expect(screen.getByRole('link', { name: '← Todas as notícias' })).toHaveAttribute('href', '#noticias')
   fireEvent.click(screen.getByRole('button', { name: 'Entrar para comentar' }))
   expect(screen.getByRole('button', { name: 'Entrar na minha conta' })).toBeVisible()

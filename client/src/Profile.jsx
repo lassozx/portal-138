@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { passwordValidationMessage } from './passwordValidation.js'
 
 const inputClass =
   'mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-red-600 focus:ring-2 focus:ring-red-100'
@@ -69,8 +70,9 @@ function Profile({ token, user, onBack, onUserUpdated }) {
       return
     }
 
-    if (newPassword.length < 8) {
-      setError('A nova senha precisa ter pelo menos 8 caracteres.')
+    const passwordError = passwordValidationMessage(newPassword)
+    if (passwordError) {
+      setError(passwordError)
       return
     }
 
@@ -245,7 +247,7 @@ function Profile({ token, user, onBack, onUserUpdated }) {
                 className={inputClass}
               />
               <p className="mt-1 text-xs text-slate-500">
-                Use pelo menos 8 caracteres.
+                Use pelo menos 8 caracteres. Acentos e emojis ocupam mais espaço no limite da senha.
               </p>
             </div>
 

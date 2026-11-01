@@ -63,7 +63,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
       setError('')
 
       const [postResult, categoryResult] = await Promise.all([
-        apiRequest('/api/posts/admin?limit=100', token),
+        apiRequest('/api/admin/posts?limit=100', token),
         apiRequest('/api/categories', token),
       ])
 

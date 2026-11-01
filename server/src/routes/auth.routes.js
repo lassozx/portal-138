@@ -13,10 +13,17 @@ const loginSchema = z.object({
   password: z.string().min(1),
 })
 
+// bcrypt truncates passwords after 72 UTF-8 bytes, including multibyte characters.
+const newPasswordSchema = z.string()
+  .min(8, 'A senha precisa ter pelo menos 8 caracteres.')
+  .refine((password) => Buffer.byteLength(password, 'utf8') <= 72, {
+    message: 'A senha é muito longa. Use menos caracteres, especialmente acentos e emojis.',
+  })
+
 const registerSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().trim().email(),
-  password: z.string().min(8).max(72),
+  password: newPasswordSchema,
 })
 
 /**
@@ -47,6 +54,7 @@ const registerSchema = z.object({
  *               password:
  *                 type: string
  *                 minLength: 8
+ *                 description: Mínimo de 8 caracteres e máximo de 72 bytes em UTF-8
  *                 example: SenhaSegura123
  *     responses:
  *       '201':
@@ -65,7 +73,7 @@ router.post('/register', authLimiter, async (req, res) => {
 
     if (!validation.success) {
       return res.status(400).json({
-        message:
+        message: validation.error.issues.find((issue) => issue.path[0] === 'password')?.message ||
           'Dados inválidos. Informe nome, e-mail válido e senha com pelo menos 8 caracteres.',
         errors: validation.error.issues,
       })
@@ -230,7 +238,7 @@ const profileSchema = z
   .object({
     name: z.string().trim().min(2).max(100).optional(),
     currentPassword: z.string().min(1).optional(),
-    newPassword: z.string().min(8).max(72).optional(),
+    newPassword: newPasswordSchema.optional(),
   })
   .refine(
     (data) =>
@@ -274,8 +282,7 @@ const profileSchema = z
  *               newPassword:
  *                 type: string
  *                 minLength: 8
- *                 maxLength: 72
- *                 description: Nova senha desejada
+ *                 description: Nova senha com pelo menos 8 caracteres e no máximo 72 bytes em UTF-8
  *     responses:
  *       '200':
  *         description: Perfil atualizado com sucesso
@@ -294,7 +301,7 @@ router.put('/profile', authenticateToken, async (req, res) => {
 
     if (!validation.success) {
       return res.status(400).json({
-        message: 'Dados de atualização inválidos.',
+        message: validation.error.issues.find((issue) => issue.path[0] === 'newPassword')?.message || 'Dados de atualização inválidos.',
         errors: validation.error.issues,
       })
     }

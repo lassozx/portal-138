@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { passwordValidationMessage } from './passwordValidation.js'
 
 function Login({ onLogin, onBack }) {
   const [registering, setRegistering] = useState(false)
@@ -26,8 +27,9 @@ function Login({ onLogin, onBack }) {
         setError('Informe seu nome com pelo menos 2 caracteres.')
         return
       }
-      if (password.length < 8 || password.length > 72) {
-        setError('A senha deve ter entre 8 e 72 caracteres.')
+      const passwordError = passwordValidationMessage(password)
+      if (passwordError) {
+        setError(passwordError)
         return
       }
       if (password !== confirmPassword) {
@@ -192,7 +194,7 @@ function Login({ onLogin, onBack }) {
             <div>
               <label htmlFor="register-confirm" className="mb-2 block text-sm font-semibold text-slate-700">Confirmar senha</label>
               <input id="register-confirm" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required disabled={loading} className="w-full rounded-xl border border-slate-300 px-4 py-3" />
-              <p className="mt-2 text-xs text-slate-500">Use uma senha de 8 a 72 caracteres.</p>
+              <p className="mt-2 text-xs text-slate-500">Use pelo menos 8 caracteres. Acentos e emojis ocupam mais espaço no limite da senha.</p>
             </div>
           )}
 
