@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import Comments from './Comments.jsx'
 import ArticleContent from './ArticleContent.jsx'
-import AccountMenu from './AccountMenu.jsx'
+import { PortalHeader, PortalFooter } from './PortalChrome.jsx'
+import './Article.css'
 
 export default function Article({ slug, session, sessionNotice, onLogin, onLogout, onProfile, onAdmin }) {
   const [post, setPost] = useState(null)
@@ -48,34 +49,44 @@ export default function Article({ slug, session, sessionNotice, onLogin, onLogou
   }, [loading])
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <header className="border-b border-slate-200">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-4 px-5 py-5">
-          <a href="#inicio" aria-label="Portal 138 — Início" className="text-xl font-black">Portal <span className="text-red-700">138</span></a>
-          <AccountMenu session={session} onLogin={onLogin} onLogout={onLogout} onProfile={onProfile} onAdmin={onAdmin} />
-          <a href="#noticias" className="rounded-lg px-3 py-2 text-sm font-bold text-red-700 hover:bg-red-50">← Todas as notícias</a>
-        </div>
-      </header>
+    <div className="portal-article-page">
+      <PortalHeader session={session} onLogin={onLogin} onLogout={onLogout} onProfile={onProfile} onAdmin={onAdmin} active="news" />
       {sessionNotice}
-      <main className="mx-auto max-w-4xl px-5 py-10 sm:py-16">
-        {loading ? <p role="status" className="py-16 text-slate-500">Carregando notícia…</p> : notFound || error ? (
-          <div className="rounded-2xl border border-red-100 bg-red-50 p-8">
-            <h1 ref={heading} tabIndex={-1} className="focus:outline-none text-2xl font-black">{notFound ? 'Notícia não encontrada' : 'Não foi possível abrir a notícia'}</h1>
-            <p role={error ? 'alert' : undefined} className="mt-4 leading-7 text-slate-600">{notFound ? 'Esta notícia não está disponível. Confira as outras publicações do portal.' : error}</p>
-            {error && <button onClick={() => setRetry((value) => value + 1)} className="mt-5 rounded-lg bg-red-700 px-5 py-3 font-bold text-white">Tentar novamente</button>}
-            <a href="#noticias" className="mt-5 block font-bold text-red-700 hover:underline">Voltar às notícias</a>
+      <nav aria-label="Navegação estrutural" className="portal-article-breadcrumb">
+        <div>
+          <a href="#inicio">Início</a>
+          <span aria-hidden="true">/</span>
+          <a href="#noticias">← Todas as notícias</a>
+        </div>
+      </nav>
+      <main id="conteudo" className="portal-article-main">
+        {loading ? <div className="portal-article-state"><p role="status">Carregando notícia…</p></div> : notFound || error ? (
+          <div className="portal-article-state portal-article-state--error">
+            <p className="portal-content-eyebrow">Portal 138 · Notícias</p>
+            <h1 ref={heading} tabIndex={-1}>{notFound ? 'Notícia não encontrada' : 'Não foi possível abrir a notícia'}</h1>
+            <p role={error ? 'alert' : undefined}>{notFound ? 'Esta notícia não está disponível. Confira as outras publicações do portal.' : error}</p>
+            <div className="portal-article-state-actions">
+              {error && <button type="button" onClick={() => setRetry((value) => value + 1)} className="portal-article-button">Tentar novamente</button>}
+              <a href="#noticias" className="portal-article-back">Voltar às notícias <span aria-hidden="true">→</span></a>
+            </div>
           </div>
         ) : post && (
           <>
             <ArticleContent post={post} headingRef={heading} />
-            <section aria-label="Participe da conversa" className="mx-auto mt-12 max-w-prose">
-              {!session && <button onClick={onLogin} className="rounded-lg bg-red-700 px-5 py-3 font-bold text-white hover:bg-red-800">Entrar para comentar</button>}
+            <section aria-label="Participe da conversa" className="portal-article-conversation">
+              <div className="portal-article-conversation-intro">
+                <div>
+                  <p className="portal-content-eyebrow">Comunidade</p>
+                  <p>Sua opinião faz parte desta história.</p>
+                </div>
+                {!session && <button type="button" onClick={onLogin} className="portal-article-button">Entrar para comentar <span aria-hidden="true">→</span></button>}
+              </div>
               <Comments key={post.id} postId={post.id} session={session} />
             </section>
           </>
         )}
       </main>
-      <footer className="border-t border-slate-200 px-5 py-6 text-center text-sm text-slate-500">Portal 138 · Notícias e comunidade escolar</footer>
+      <PortalFooter />
     </div>
   )
 }

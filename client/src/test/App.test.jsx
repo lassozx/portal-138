@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import App from '../App.jsx'
 
 const post = { id: 'p1', slug: 'feira-de-ciencias', title: 'Feira de ciências', excerpt: 'Projetos dos alunos', content: 'Texto completo sobre as experiências da feira.', publishedAt: '2026-10-30', category: { name: 'Projetos' } }
@@ -58,4 +58,32 @@ it('permite tentar novamente após falha sem recarregar a página', async () => 
   await screen.findByRole('button', { name: 'Tentar novamente' })
   fireEvent.click(screen.getByRole('button', { name: 'Tentar novamente' }))
   await screen.findByText('Em destaque · Projetos')
+})
+
+it('navega pelos destaques e mantém o link da notícia selecionada', async () => {
+  const second = { ...post, id: 'p2', slug: 'esporte', title: 'Esporte na escola' }
+  const third = { ...post, id: 'p3', slug: 'cultura', title: 'Cultura na comunidade' }
+  mockApi(() => result([post, second, third]))
+  render(<App />)
+  const hero = screen.getByRole('region', { name: 'Destaques do Portal 138' })
+  await within(hero).findByRole('heading', { name: post.title })
+
+  fireEvent.click(screen.getByRole('button', { name: 'Próximo destaque' }))
+  expect(within(hero).getByRole('heading', { name: second.title })).toBeVisible()
+  expect(within(hero).getByRole('link', { name: 'Ler notícia', exact: true })).toHaveAttribute('href', '#/noticias/esporte')
+  expect(screen.getByRole('button', { name: 'Ir para destaque 2' })).toHaveAttribute('aria-pressed', 'true')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Ir para destaque 1' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Destaque anterior' }))
+  expect(within(hero).getByRole('heading', { name: third.title })).toBeVisible()
+  expect(within(hero).getByRole('link', { name: 'Ler notícia', exact: true })).toHaveAttribute('href', '#/noticias/cultura')
+})
+
+it('a pesquisa do cabeçalho leva ao único campo de busca da página', async () => {
+  mockApi()
+  render(<App />)
+  await screen.findByText('Em destaque · Projetos')
+  fireEvent.click(screen.getByRole('button', { name: 'Pesquisar notícias' }))
+  expect(screen.getAllByRole('searchbox')).toHaveLength(1)
+  expect(screen.getByRole('searchbox')).toHaveFocus()
 })
