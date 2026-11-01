@@ -112,6 +112,27 @@ Os testes de saúde do servidor usam o PostgreSQL real; mantenha o banco local
 disponível. Os testes iniciam a própria API, sem exigir `npm run dev` em paralelo.
 O build do cliente é gerado em `client/dist`.
 
+## Integração contínua
+
+O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) executa no
+GitHub Actions a cada pull request para a `main`, a cada push nessa branch ou
+manualmente pela aba Actions, com dois jobs:
+
+- **Cliente:** instala as dependências com `npm ci`, executa os testes e gera o
+  build.
+- **Servidor:** usa Node.js 24 e um PostgreSQL 18 temporário, instala as
+  dependências com `npm ci`, gera o cliente Prisma, aplica as migrações com
+  `prisma migrate deploy` e executa os testes.
+
+As variáveis e credenciais descartáveis do ambiente de CI estão definidas no
+workflow. Não é necessário configurar secrets nem criar um arquivo `.env` no
+GitHub. Consulte os resultados e os logs de falhas na aba **Actions** do
+repositório ou nas verificações do pull request.
+
+Para exigir a aprovação desses jobs antes de um merge, configure as regras de
+proteção da branch no GitHub. A execução do workflow, por si só, não torna as
+verificações obrigatórias nem publica o site.
+
 ## Configuração fora do ambiente local
 
 As credenciais do Compose são apenas para desenvolvimento. Use credenciais
