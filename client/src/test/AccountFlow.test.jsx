@@ -47,7 +47,7 @@ it.each(['ADMIN', 'EDITOR'])('mantém o painel disponível para %s', async (role
   fireEvent.click(screen.getByRole('button', { name: 'Entrar', exact: true }))
   await login()
   await screen.findByRole('heading', { name: 'Painel administrativo' })
-  expect(fetch).toHaveBeenCalledWith('/api/admin/posts?limit=100', expect.anything())
+  expect(fetch).toHaveBeenCalledWith('/api/admin/posts?limit=20&page=1', expect.anything())
   fireEvent.click(screen.getByRole('button', { name: 'Ver portal' }))
   expect(screen.getByRole('button', { name: 'Painel' })).toBeVisible()
 })

@@ -16,7 +16,7 @@ category: null,
 
 function mockFetch() {
 return vi.fn(async (url, options = {}) => {
-if (url === '/api/admin/posts?limit=100') {
+if (url === '/api/admin/posts?limit=20&page=1') {
 return {
 ok: true,
 json: async () => ({ data: [mockPost] }),
@@ -197,5 +197,93 @@ describe('AdminPanel — prévia antes de salvar', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(screen.queryByRole('region', { name: 'Prévia da notícia' })).not.toBeInTheDocument()
     expect(screen.getByLabelText('Título *')).toHaveValue('')
+  })
+})
+
+describe('AdminPanel — paginação e criação por perfil', () => {
+  let records
+  beforeEach(() => {
+    records = Array.from({ length: 101 }, (_, index) => ({ ...mockPost, id: `post-${index + 1}`, title: `Publicação ${index + 1}`, slug: `publicacao-${index + 1}` }))
+    vi.stubGlobal('scrollTo', vi.fn())
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.stubGlobal('fetch', vi.fn(async (url, options = {}) => {
+      if (url.startsWith('/api/admin/posts?')) {
+        const params = new URL(url, 'http://localhost').searchParams
+        const page = Number(params.get('page'))
+        const limit = Number(params.get('limit'))
+        return { ok: true, json: async () => ({ data: records.slice((page - 1) * limit, page * limit), pagination: { page, limit, total: records.length, totalPages: Math.ceil(records.length / limit) } }) }
+      }
+      if (url === '/api/categories') return { ok: true, json: async () => [] }
+      if (options.method === 'DELETE') {
+        records = records.filter((post) => `/api/posts/${post.id}` !== url)
+        return { ok: true, json: async () => ({}) }
+      }
+      if (url === '/api/posts' && options.method === 'POST') return { ok: true, json: async () => ({}) }
+      throw new Error(`Requisição inesperada: ${url}`)
+    }))
+  })
+  afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
+
+  async function lastPage() {
+    await screen.findByText('Página 1 de 6')
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    for (let page = 2; page <= 6; page++) {
+      fireEvent.click(screen.getByRole('button', { name: 'Próxima' }))
+      await screen.findByText(`Página ${page} de 6`)
+      await waitFor(() => expect(screen.queryByText('Carregando notícias...')).not.toBeInTheDocument())
+    }
+  }
+
+  it('alcança a notícia 101, mostra total global e permite voltar', async () => {
+    renderPanel('ADMIN')
+    await lastPage()
+    expect(await screen.findByText('Publicação 101')).toBeVisible()
+    expect(screen.getByText('1 de 101')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Próxima' })).toBeDisabled()
+    expect(fetch).toHaveBeenCalledWith('/api/admin/posts?limit=20&page=6', expect.anything())
+    expect(screen.queryByText('Publicação 1')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Anterior' }))
+    await screen.findByText('Publicação 81')
+    expect(screen.getByText('20 de 101')).toBeVisible()
+  })
+
+  it('retorna à última página válida após excluir sua única notícia', async () => {
+    renderPanel('ADMIN')
+    await lastPage()
+    await screen.findByText('Publicação 101')
+    fireEvent.click(screen.getByRole('button', { name: 'Excluir notícia' }))
+    await screen.findByText('Página 5 de 5')
+    expect(await screen.findByText('Publicação 100')).toBeVisible()
+    expect(screen.queryByText('Publicação 101')).not.toBeInTheDocument()
+    expect(screen.getByText('20 de 100')).toBeVisible()
+  })
+
+  it('permite repetir o carregamento da página que falhou', async () => {
+    const original = fetch.getMockImplementation()
+    let fail = true
+    fetch.mockImplementation((url, options) => {
+      if (url.endsWith('page=2') && fail) { fail = false; return Promise.resolve({ ok: false, json: async () => ({ message: 'Falha temporária' }) }) }
+      return original(url, options)
+    })
+    renderPanel()
+    await screen.findByText('Página 1 de 6')
+    fireEvent.click(screen.getByRole('button', { name: 'Próxima' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Tentar novamente' }))
+    expect(await screen.findByText('Publicação 21')).toBeVisible()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it.each(['EDITOR', 'ADMIN'])('orienta corretamente %s após criar um rascunho', async (role) => {
+    records = [mockPost]
+    renderPanel(role)
+    await screen.findByText('Notícia de teste')
+    fireEvent.change(screen.getByLabelText('Título *'), { target: { value: 'Novo projeto escolar' } })
+    fireEvent.change(screen.getByLabelText('Slug / endereço *'), { target: { value: 'novo-projeto-escolar' } })
+    fireEvent.change(screen.getByLabelText('Conteúdo *'), { target: { value: 'Uma notícia para a comunidade.' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Criar rascunho' }))
+    const message = role === 'ADMIN' ? 'Notícia criada como rascunho. Você pode editá-la para publicar.' : 'Notícia criada como rascunho. Um administrador poderá publicá-la.'
+    expect(await screen.findByRole('status')).toHaveTextContent(message)
+    const call = fetch.mock.calls.find(([url, options]) => url === '/api/posts' && options.method === 'POST')
+    expect(JSON.parse(call[1].body)).not.toHaveProperty('status')
   })
 })
