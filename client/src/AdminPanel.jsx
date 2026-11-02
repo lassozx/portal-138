@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import ArticleContent from './ArticleContent.jsx'
 
 const EMPTY_POST = {
@@ -45,6 +45,10 @@ function AdminPanel({ token, user, onLogout, onBack }) {
   const [section, setSection] = useState('posts')
   const [previewing, setPreviewing] = useState(false)
   const [posts, setPosts] = useState([])
+  const [postPage, setPostPage] = useState(1)
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 0 })
+  const [loadFailed, setLoadFailed] = useState(false)
+  const loadRequest = useRef(0)
   const [categories, setCategories] = useState([])
   const [postForm, setPostForm] = useState(EMPTY_POST)
   const [categoryForm, setCategoryForm] = useState(EMPTY_CATEGORY)
@@ -58,16 +62,27 @@ function AdminPanel({ token, user, onLogout, onBack }) {
   const isAdmin = user?.role === 'ADMIN'
 
   const loadData = useCallback(async () => {
+    const request = ++loadRequest.current
     try {
       setLoading(true)
+      setLoadFailed(false)
       setError('')
 
       const [postResult, categoryResult] = await Promise.all([
-        apiRequest('/api/admin/posts?limit=100', token),
+        apiRequest(`/api/admin/posts?limit=20&page=${postPage}`, token),
         apiRequest('/api/categories', token),
       ])
 
-      setPosts(Array.isArray(postResult.data) ? postResult.data : [])
+      if (request !== loadRequest.current) return
+      const data = Array.isArray(postResult.data) ? postResult.data : []
+      const resultPagination = postResult.pagination || { total: data.length, totalPages: data.length ? 1 : 0 }
+      const lastPage = Math.max(1, resultPagination.totalPages)
+      if (postPage > lastPage) {
+        setPostPage(lastPage)
+        return
+      }
+      setPosts(data)
+      setPagination(resultPagination)
       setCategories(
         Array.isArray(categoryResult)
           ? categoryResult
@@ -76,14 +91,18 @@ function AdminPanel({ token, user, onLogout, onBack }) {
             : [],
       )
     } catch (err) {
+      if (request !== loadRequest.current) return
+      setPosts([])
+      setLoadFailed(true)
       setError(err.message || 'Erro ao carregar os dados.')
     } finally {
-      setLoading(false)
+      if (request === loadRequest.current) setLoading(false)
     }
-  }, [token])
+  }, [token, postPage])
 
   useEffect(() => {
     loadData()
+    return () => { loadRequest.current += 1 }
   }, [loadData])
 
   function updatePostField(event) {
@@ -155,7 +174,9 @@ function AdminPanel({ token, user, onLogout, onBack }) {
         })
 
         setNotice(
-          'Notícia criada como rascunho. Você pode editá-la para publicar.',
+          isAdmin
+            ? 'Notícia criada como rascunho. Você pode editá-la para publicar.'
+            : 'Notícia criada como rascunho. Um administrador poderá publicá-la.',
         )
       }
 
@@ -343,7 +364,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
         <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <div className="rounded-lg border border-neutral-200 bg-white p-5">
             <p className="text-sm text-neutral-500">Total de notícias</p>
-            <p className="mt-2 text-3xl font-bold">{posts.length}</p>
+            <p className="mt-2 text-3xl font-bold">{pagination.total}</p>
             <p className="mt-1 text-xs text-neutral-500">Todos os status</p>
           </div>
 
@@ -352,7 +373,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
             <p className="mt-2 text-3xl font-bold text-green-700">
               {posts.filter((post) => post.status === 'PUBLISHED').length}
             </p>
-            <p className="mt-1 text-xs text-neutral-500">Visíveis no portal</p>
+            <p className="mt-1 text-xs text-neutral-500">Nesta página</p>
           </div>
 
           <div className="rounded-lg border border-amber-200 bg-white p-5">
@@ -360,7 +381,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
             <p className="mt-2 text-3xl font-bold text-amber-700">
               {posts.filter((post) => post.status === 'DRAFT').length}
             </p>
-            <p className="mt-1 text-xs text-neutral-500">Aguardando publicação</p>
+            <p className="mt-1 text-xs text-neutral-500">Nesta página</p>
           </div>
 
           <div className="rounded-lg border border-neutral-300 bg-white p-5">
@@ -368,7 +389,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
             <p className="mt-2 text-3xl font-bold text-neutral-700">
               {posts.filter((post) => post.status === 'ARCHIVED').length}
             </p>
-            <p className="mt-1 text-xs text-neutral-500">Fora das publicações ativas</p>
+            <p className="mt-1 text-xs text-neutral-500">Nesta página</p>
           </div>
 
           <div className="rounded-lg border border-red-200 bg-white p-5">
@@ -451,7 +472,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                   </p>
                 </div>
                 <span className="rounded bg-neutral-100 px-3 py-1 text-sm font-bold">
-                  {posts.length}
+                  {posts.length} de {pagination.total}
                 </span>
               </div>
 
@@ -459,6 +480,8 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                 <p className="py-8 text-sm text-neutral-500">
                   Carregando notícias...
                 </p>
+              ) : loadFailed ? (
+                <button type="button" onClick={() => loadData()} className="rounded-md border border-red-700 px-4 py-2 text-sm font-bold text-red-700">Tentar novamente</button>
               ) : posts.length === 0 ? (
                 <p className="rounded-md bg-neutral-50 p-5 text-sm text-neutral-600">
                   Nenhuma notícia encontrada.
@@ -513,6 +536,13 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                     </article>
                   ))}
                 </div>
+              )}
+              {!loadFailed && pagination.totalPages > 1 && (
+                <nav aria-label="Paginação administrativa" className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm">
+                  <button type="button" disabled={loading || postPage <= 1} onClick={() => setPostPage((page) => page - 1)} className="rounded-md border border-neutral-300 px-3 py-2 font-bold disabled:opacity-40">Anterior</button>
+                  <span role="status">Página {postPage} de {pagination.totalPages}</span>
+                  <button type="button" disabled={loading || postPage >= pagination.totalPages} onClick={() => setPostPage((page) => page + 1)} className="rounded-md border border-neutral-300 px-3 py-2 font-bold disabled:opacity-40">Próxima</button>
+                </nav>
               )}
             </section>
 
