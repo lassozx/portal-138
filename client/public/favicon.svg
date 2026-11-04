@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>Portal 138</title>
+  <rect width="64" height="64" rx="14" fill="#ed001b" />
+  <g fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 25l7-5v25" />
+    <path d="M25 20h7a6 6 0 0 1 0 12h-4m4 0a6.5 6.5 0 0 1 0 13h-7" />
+    <path d="M56 26a6 6 0 1 1-12 0 6 6 0 0 1 12 0Zm1 12.5a7 6.5 0 1 1-14 0 7 6.5 0 0 1 14 0Z" />
+  </g>
+</svg>
