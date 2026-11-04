@@ -23,7 +23,7 @@ function articleLink(post) {
 
 function navigationSection() {
   return (
-    { '#noticias': 'news', '#projetos': 'projects', '#sobre': 'about' }[window.location.hash] ||
+    { '#noticias': 'news', '#sobre': 'about' }[window.location.hash] ||
     'home'
   )
 }
@@ -349,16 +349,6 @@ function App() {
                 <PortalIcon name="arrow" />
               </span>
             </a>
-            <a href="#projetos" className="portal-quick-link">
-              <PortalIcon name="projects" />
-              <span>
-                <strong>Projetos e ideias</strong>
-                <small>Conhecimento em movimento</small>
-              </span>
-              <span aria-hidden="true">
-                <PortalIcon name="arrow" />
-              </span>
-            </a>
             <a href="#sobre" className="portal-quick-link">
               <PortalIcon name="community" />
               <span>
@@ -540,56 +530,6 @@ function App() {
           )}
         </section>
 
-        <section id="projetos" className="portal-projects-section">
-          <div className="portal-container">
-            <div className="portal-section-heading">
-              <div>
-                <p className="portal-eyebrow">CONHECIMENTO QUE TRANSFORMA</p>
-                <h2>
-                  Além da sala de aula<span aria-hidden="true">.</span>
-                </h2>
-              </div>
-              <p>
-                Ideias que saem do papel
-                <br className="portal-desktop-break" /> e ganham vida na comunidade.
-              </p>
-            </div>
-            <div className="portal-project-grid">
-              {[
-                {
-                  number: '01',
-                  icon: 'projects',
-                  title: 'Projetos escolares',
-                  text: 'Iniciativas, experiências e trabalhos que colocam o aprendizado em prática.',
-                },
-                {
-                  number: '02',
-                  icon: 'calendar',
-                  title: 'Eventos e atividades',
-                  text: 'Encontros e acontecimentos que fazem parte do nosso dia a dia escolar.',
-                },
-                {
-                  number: '03',
-                  icon: 'idea',
-                  title: 'Ideias e criatividade',
-                  text: 'Talentos e novas perspectivas de quem transforma a nossa comunidade.',
-                },
-              ].map((item) => (
-                <article key={item.number} className="portal-project-card">
-                  <div className="portal-project-top">
-                    <PortalIcon name={item.icon} />
-                    <span>{item.number}</span>
-                  </div>
-                  <h3>{item.title}</h3>
-                  <p>{item.text}</p>
-                  <a href="#noticias" aria-label={`Acompanhar notícias: ${item.title}`}>
-                    Acompanhar notícias <span aria-hidden="true">→</span>
-                  </a>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
         <section id="sobre" className="portal-about-section portal-container">
           <div className="portal-about-mark" aria-hidden="true">
             <span>138</span>
@@ -698,26 +638,10 @@ function PortalIcon({ name }) {
         <path d="M3 9v11a1 1 0 0 0 1 1h15" />
       </>
     ),
-    projects: (
-      <>
-        <path d="M12 3l10 5-10 5L2 8l10-5zM5 10v7l7 4 7-4v-7M22 8v7" />
-      </>
-    ),
     community: (
       <>
         <circle cx="9" cy="8" r="3" />
         <path d="M3 20v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M21 20v-3a6 6 0 0 0-4-5" />
-      </>
-    ),
-    calendar: (
-      <>
-        <rect x="4" y="5" width="16" height="16" rx="1" />
-        <path d="M4 10h16M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2" />
-      </>
-    ),
-    idea: (
-      <>
-        <path d="M9 18h6M10 21h4M8 13a6 6 0 1 1 8 0c-1.5 1-2 2-2 3h-4c0-1-.5-2-2-3z" />
       </>
     ),
     search: (

@@ -5,7 +5,6 @@ import './PortalChrome.css'
 const navigation = [
   { key: 'home', label: 'Início', href: '#inicio' },
   { key: 'news', label: 'Notícias', href: '#noticias' },
-  { key: 'projects', label: 'Projetos', href: '#projetos' },
   { key: 'about', label: 'Sobre o portal', href: '#sobre' },
 ]
 
@@ -78,7 +77,9 @@ export function PortalHeader({
       </div>
 
       <div className="chrome-container chrome-brand-row">
-        <Wordmark />
+        <a href="#inicio" className="chrome-header-logo" aria-label="Portal 138 - Início">
+          <img src="/logo-sesi-sp.svg" alt="SESI São Paulo" width="533" height="95" />
+        </a>
         <p className="chrome-brand-message">
           Um novo olhar sobre
           <br />
@@ -188,9 +189,6 @@ export function PortalFooter() {
         <div className="chrome-footer-column">
           <h2>Nossa comunidade</h2>
           <ul>
-            <li>
-              <a href="#projetos">Projetos escolares</a>
-            </li>
             <li>
               <a href="#sobre">Sobre o Portal 138</a>
             </li>

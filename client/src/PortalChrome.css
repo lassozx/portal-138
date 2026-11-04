@@ -51,6 +51,18 @@
   padding-block: 25px;
 }
 
+.chrome-header-logo {
+  display: block;
+  flex: 0 1 300px;
+  max-width: calc(100% - 120px);
+}
+
+.chrome-header-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .chrome-wordmark {
   display: inline-flex;
   flex: 0 0 auto;
@@ -375,6 +387,11 @@
 
   .chrome-wordmark-name {
     font-size: 29px;
+  }
+
+  .chrome-header-logo {
+    flex-basis: 210px;
+    max-width: min(48vw, calc(100% - 110px));
   }
 
   .chrome-wordmark-description {

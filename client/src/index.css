@@ -274,7 +274,7 @@ section[id] {
 }
 .portal-quick-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .portal-quick-link {
   display: flex;
@@ -617,71 +617,6 @@ section[id] {
 .portal-news-skeleton > span:last-child {
   width: 50%;
 }
-.portal-projects-section {
-  padding-block: 64px 68px;
-  border-top: 1px solid #ededed;
-  border-bottom: 1px solid #ededed;
-  background: var(--portal-surface);
-}
-.portal-project-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-}
-.portal-project-card {
-  padding: 29px;
-  border: 1px solid #e2e2e2;
-  border-radius: 3px;
-  background: white;
-}
-.portal-project-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 31px;
-  color: var(--portal-red);
-}
-.portal-project-top > .portal-icon {
-  width: 34px;
-  height: 34px;
-}
-.portal-project-top > span {
-  color: #c5c5c5;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-}
-.portal-project-card h3 {
-  margin: 0 0 12px;
-  font-size: 19px;
-  font-weight: 700;
-}
-.portal-project-card > p {
-  margin: 0;
-  min-height: 65px;
-  color: var(--portal-muted);
-  font-size: 13px;
-  line-height: 1.85;
-}
-.portal-project-card > a {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  align-items: center;
-  margin-top: 25px;
-  padding-top: 19px;
-  border-top: 1px solid #ededed;
-  color: var(--portal-red);
-  font-size: 11px;
-  font-weight: 700;
-  text-decoration: none;
-}
-.portal-project-card > a:hover {
-  text-decoration: underline;
-}
-.portal-project-card > a span {
-  font-size: 19px;
-}
 .portal-about-section {
   display: grid;
   grid-template-columns: 0.7fr 1.3fr;
@@ -927,22 +862,6 @@ section[id] {
   }
   .portal-card-excerpt {
     font-size: 14px;
-  }
-  .portal-projects-section {
-    padding-block: 44px 46px;
-  }
-  .portal-project-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-  .portal-project-card {
-    padding: 26px;
-  }
-  .portal-project-top {
-    margin-bottom: 23px;
-  }
-  .portal-project-card > p {
-    min-height: 0;
   }
   .portal-about-section {
     grid-template-columns: 1fr;
