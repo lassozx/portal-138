@@ -116,13 +116,13 @@ function Profile({ token, user, onBack, onUserUpdated }) {
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 border-t-4 border-t-red-700 bg-white px-5 py-6 sm:px-6">
           <div>
             <p className="text-sm font-bold uppercase tracking-wider text-red-700">
-              Portal 138
+              SESI - Portal 138
             </p>
             <h1 className="mt-1 text-3xl font-bold tracking-tight">
               Meu perfil
             </h1>
             <p className="mt-2 text-sm text-neutral-600">
-              Gerencie suas informações de acesso.
+              Gerencie suas informações de acesso
             </p>
           </div>
 
@@ -209,9 +209,6 @@ function Profile({ token, user, onBack, onUserUpdated }) {
 
         <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
           <h2 className="text-lg font-bold">Alterar senha</h2>
-          <p className="mt-1 text-sm text-neutral-600">
-            Use sua senha atual para cadastrar uma nova senha.
-          </p>
 
           <form onSubmit={updatePassword} className="mt-5 space-y-4">
             <div>
@@ -246,9 +243,6 @@ function Profile({ token, user, onBack, onUserUpdated }) {
                 onChange={(event) => setNewPassword(event.target.value)}
                 className={inputClass}
               />
-              <p className="mt-1 text-xs text-neutral-500">
-                Use pelo menos 8 caracteres. Acentos e emojis ocupam mais espaço no limite da senha.
-              </p>
             </div>
 
             <div>

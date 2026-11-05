@@ -27,3 +27,6 @@ Thumbs.db
 # Arquivos temporários
 *.tmp
 *.swp
+
+# Imagens enviadas pelo painel
+server/uploads/
