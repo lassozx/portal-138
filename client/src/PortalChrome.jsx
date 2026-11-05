@@ -8,6 +8,39 @@ const navigation = [
   { key: 'about', label: 'Sobre o portal', href: '#sobre' },
 ]
 
+const institutions = [
+  { label: 'FIESP', href: 'https://www.fiesp.com.br/' },
+  { label: 'CIESP', href: 'https://www.ciesp.com.br/' },
+  { label: 'SESI', href: 'https://www.sesisp.org.br/' },
+  { label: 'SENAI', href: 'https://www.sp.senai.br/' },
+]
+
+const socialLinks = [
+  { name: 'Facebook', icon: 'facebook', href: 'https://www.facebook.com/sesisp' },
+  { name: 'YouTube', icon: 'youtube', href: 'https://www.youtube.com/sesisp' },
+  { name: 'Instagram', icon: 'instagram', href: 'https://www.instagram.com/sesi.sp/' },
+]
+
+function SocialIcon({ name }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      {name === 'facebook' && (
+        <path d="M14 22v-9h3l.5-4H14V7c0-1.2.3-2 2-2h2V1.4a25 25 0 0 0-3-.2c-3 0-5 1.8-5 5.2V9H7v4h3v9z" />
+      )}
+      {name === 'youtube' && (
+        <path fillRule="evenodd" d="M23 7s-.2-1.7-.9-2.4c-.9-.9-1.9-.9-2.4-1C16.3 3.3 12 3.3 12 3.3s-4.3 0-7.7.3c-.5.1-1.5.1-2.4 1C1.2 5.3 1 7 1 7S.7 9 .7 11v2c0 2 .3 4 .3 4s.2 1.7.9 2.4c.9.9 2.1.9 2.6 1 2 .2 7.5.3 7.5.3s4.3 0 7.7-.3c.5-.1 1.5-.1 2.4-1 .7-.7.9-2.4.9-2.4s.3-2 .3-4v-2c0-2-.3-4-.3-4ZM9.7 15.5V8.4l6.5 3.6z" clipRule="evenodd" />
+      )}
+      {name === 'instagram' && (
+        <>
+          <rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" strokeWidth="2" />
+          <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" strokeWidth="2" />
+          <circle cx="17.5" cy="6.5" r="1.2" />
+        </>
+      )}
+    </svg>
+  )
+}
+
 function SearchIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -52,11 +85,28 @@ export function PortalHeader({
   return (
     <header className="chrome-header">
       <div className="chrome-utility">
-        <div className="chrome-container chrome-utility-inner">
-          <span>Informação, educação e comunidade</span>
-          <span className="chrome-utility-school">
-            COMUNIDADE ESCOLAR <strong>SESI 138</strong>
-          </span>
+        <div className="chrome-utility-inner">
+          <nav className="chrome-institutions" aria-label="Instituições">
+            {institutions.map((institution) => (
+              <a key={institution.label} href={institution.href} target="_blank" rel="noopener noreferrer">
+                {institution.label}<span className="chrome-sr-only"> (abre em nova aba)</span>
+              </a>
+            ))}
+          </nav>
+          <nav className="chrome-social-links" aria-label="Redes sociais do SESI-SP">
+            {socialLinks.map((social) => (
+              <a
+                key={social.icon}
+                href={social.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`SESI-SP no ${social.name} (abre em nova aba)`}
+                title={`SESI-SP no ${social.name}`}
+              >
+                <SocialIcon name={social.icon} />
+              </a>
+            ))}
+          </nav>
         </div>
       </div>
 
