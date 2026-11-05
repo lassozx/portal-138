@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ArticleContent from './ArticleContent.jsx'
+import CoverImageInput from './CoverImageInput.jsx'
+import UserManagement from './UserManagement.jsx'
 
 const EMPTY_POST = {
   title: '',
@@ -56,6 +58,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
   const [editingCategory, setEditingCategory] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -141,6 +144,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
 
   async function savePost(event) {
     event.preventDefault()
+    if (uploading) return
 
     try {
       setSaving(true)
@@ -434,13 +438,20 @@ function AdminPanel({ token, user, onLogout, onBack }) {
             Categorias
           </button>
 
-          <button
+          {isAdmin && (
+            <button type="button" onClick={() => { setSection('users'); setError(''); setNotice('') }}
+              className={`rounded-lg px-5 py-3 text-sm font-bold ${section === 'users' ? 'bg-red-700 text-white' : 'border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50'}`}>
+              Usuários
+            </button>
+          )}
+
+          {section !== 'users' && <button
             type="button"
             onClick={loadData}
             className="ml-auto rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm font-bold text-neutral-700 hover:bg-neutral-50"
           >
             Atualizar dados
-          </button>
+          </button>}
         </div>
 
         {error && (
@@ -460,6 +471,8 @@ function AdminPanel({ token, user, onLogout, onBack }) {
             {notice}
           </div>
         )}
+
+        {section === 'users' && isAdmin && <UserManagement token={token} currentUser={user} />}
 
         {section === 'posts' && (
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]">
@@ -517,6 +530,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
 
                         <button
                           type="button"
+                          disabled={uploading || saving}
                           onClick={() => editPost(post)}
                           className="rounded-lg border border-neutral-300 px-3 py-2 text-sm font-bold hover:bg-neutral-50"
                         >
@@ -527,6 +541,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                       {isAdmin && (
                         <button
                           type="button"
+                          disabled={uploading || saving}
                           onClick={() => deletePost(post)}
                           className="mt-3 text-sm font-semibold text-red-700 hover:text-red-900"
                         >
@@ -557,6 +572,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                 {editingPost && (
                   <button
                     type="button"
+                    disabled={uploading || saving}
                     onClick={resetPostForm}
                     className="text-sm font-bold text-neutral-500 hover:text-neutral-900"
                   >
@@ -566,8 +582,8 @@ function AdminPanel({ token, user, onLogout, onBack }) {
               </div>
 
               <div className="mb-5 flex flex-wrap gap-2" role="group" aria-label="Modo do editor">
-                <button type="button" aria-pressed={!previewing} onClick={() => setPreviewing(false)} className={`rounded-lg px-4 py-2 text-sm font-bold ${!previewing ? 'bg-red-700 text-white' : 'border border-neutral-300 text-neutral-700'}`}>Escrever</button>
-                <button type="button" aria-pressed={previewing} onClick={() => setPreviewing(true)} className={`rounded-lg px-4 py-2 text-sm font-bold ${previewing ? 'bg-red-700 text-white' : 'border border-neutral-300 text-neutral-700'}`}>Pré-visualizar notícia</button>
+                <button type="button" disabled={uploading} aria-pressed={!previewing} onClick={() => setPreviewing(false)} className={`rounded-lg px-4 py-2 text-sm font-bold ${!previewing ? 'bg-red-700 text-white' : 'border border-neutral-300 text-neutral-700'}`}>Escrever</button>
+                <button type="button" disabled={uploading} aria-pressed={previewing} onClick={() => setPreviewing(true)} className={`rounded-lg px-4 py-2 text-sm font-bold ${previewing ? 'bg-red-700 text-white' : 'border border-neutral-300 text-neutral-700'}`}>Pré-visualizar notícia</button>
               </div>
 
               {previewing && (
@@ -647,17 +663,13 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                   />
                 </label>
 
-                <label className={labelClass}>
-                  URL da imagem de capa
-                  <input
-                    className={inputClass}
-                    name="coverImage"
-                    type="url"
-                    value={postForm.coverImage}
-                    onChange={updatePostField}
-                    placeholder="https://..."
-                  />
-                </label>
+                <CoverImageInput
+                  token={token}
+                  value={postForm.coverImage}
+                  onChange={(coverImage) => setPostForm(current => ({ ...current, coverImage }))}
+                  onBusyChange={setUploading}
+                  disabled={saving || uploading}
+                />
 
                 <label className={labelClass}>
                   Categoria
@@ -694,10 +706,12 @@ function AdminPanel({ token, user, onLogout, onBack }) {
 
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || uploading}
                   className="w-full rounded-md bg-red-700 px-5 py-3 font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {saving
+                  {uploading
+                    ? 'Enviando imagem...'
+                    : saving
                     ? 'Salvando...'
                     : editingPost
                       ? 'Salvar alterações'
@@ -835,10 +849,12 @@ function AdminPanel({ token, user, onLogout, onBack }) {
 
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || uploading}
                   className="w-full rounded-md bg-red-700 px-5 py-3 font-bold text-white transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {saving
+                  {uploading
+                    ? 'Enviando imagem...'
+                    : saving
                     ? 'Salvando...'
                     : editingCategory
                       ? 'Salvar categoria'

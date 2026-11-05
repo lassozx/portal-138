@@ -1,5 +1,5 @@
-export function passwordValidationMessage(password) {
-  if (password.length < 8) return 'A senha precisa ter pelo menos 8 caracteres.'
+export function passwordValidationMessage(password, minimum = 8) {
+  if (password.length < minimum) return `A senha precisa ter pelo menos ${minimum} caracteres.`
   if (new TextEncoder().encode(password).byteLength > 72) {
     return 'A senha é muito longa. Use menos caracteres, especialmente acentos e emojis.'
   }

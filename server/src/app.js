@@ -52,6 +52,8 @@ res.status(500).json({
 app.use('/api/auth', authRoutes)
 // Consulta administrativa separada dos slugs públicos das notícias
 app.use('/api/admin/posts', adminPostsRoutes)
+app.use('/api/admin/users', require('./routes/admin.users.routes'))
+app.use('/api/uploads', require('./routes/uploads.routes'))
 // Rotas públicas de notícias
 app.use('/api/posts', postsRoutes)
 app.use('/api/categories', categoriesRoutes)
