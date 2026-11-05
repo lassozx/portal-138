@@ -365,15 +365,10 @@ function App() {
         <section id="noticias" className="portal-news-section portal-container">
           <div className="portal-section-heading">
             <div>
-              <p className="portal-eyebrow">ACONTECE NO 138</p>
               <h2>
-                Últimas notícias<span aria-hidden="true">.</span>
+                Últimas notícias<span aria-hidden="true"></span>
               </h2>
             </div>
-            <p>
-              As novidades e as histórias
-              <br className="portal-desktop-break" /> que conectam a nossa escola.
-            </p>
           </div>
           <div className="portal-news-tools">
             <label className="portal-search-field" htmlFor="portal-search">
@@ -533,13 +528,13 @@ function App() {
         <section id="sobre" className="portal-about-section portal-container">
           <div className="portal-about-mark" aria-hidden="true">
             <span>138</span>
-            <small>NOSSA COMUNIDADE</small>
+            <small>SESI SANTO ANASTÁCIO</small>
           </div>
           <div className="portal-about-copy">
             <p className="portal-eyebrow">SOBRE O PORTAL</p>
             <h2>Um projeto de estudante, feito para a escola.</h2>
             <p>
-              O Portal 138 foi criado e desenvolvido por <strong>Lasso, estudante do SENAI</strong>,
+              O SESI - Portal 138 foi criado e desenvolvido por <strong>Lasso, estudante do SENAI</strong>,
               para reunir notícias, projetos e acontecimentos da comunidade escolar do SESI 138.
               Uma forma de colocar o aprendizado em prática e dar espaço às histórias de quem
               faz a escola acontecer.
@@ -552,9 +547,6 @@ function App() {
                 )}
               </ul>
             </div>
-            <a href="#inicio" className="portal-text-link">
-              Voltar ao início <span aria-hidden="true">↑</span>
-            </a>
           </div>
         </section>
       </main>

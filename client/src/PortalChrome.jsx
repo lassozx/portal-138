@@ -16,9 +16,9 @@ const institutions = [
 ]
 
 const socialLinks = [
-  { name: 'Facebook', icon: 'facebook', href: 'https://www.facebook.com/sesisp' },
+  { name: 'Facebook', icon: 'facebook', href: 'https://www.facebook.com/share/g/1Dc7FtWLwQ/' },
   { name: 'YouTube', icon: 'youtube', href: 'https://www.youtube.com/sesisp' },
-  { name: 'Instagram', icon: 'instagram', href: 'https://www.instagram.com/sesi.sp/' },
+  { name: 'Instagram', icon: 'instagram', href: 'https://www.instagram.com/segundoano.26_/' },
 ]
 
 function SocialIcon({ name }) {
@@ -114,11 +114,7 @@ export function PortalHeader({
         <a href="#inicio" className="chrome-header-logo" aria-label="Portal 138 - Início">
           <img src="/logo-sesi-sp.svg" alt="SESI São Paulo" width="533" height="95" />
         </a>
-        <p className="chrome-brand-message">
-          Um novo olhar sobre
-          <br />
-          <strong>a nossa comunidade.</strong>
-        </p>
+        
         <div className="chrome-account">
           <AccountMenu
             session={session}

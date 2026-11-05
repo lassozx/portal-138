@@ -331,7 +331,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-5 md:px-8">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-red-700">
-              Portal 138
+              SESI - Portal 138
             </p>
             <h1 className="mt-1 text-2xl font-bold">
               Painel administrativo
@@ -397,7 +397,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
             <p className="mt-2 text-3xl font-bold text-red-700">
               {categories.length}
             </p>
-            <p className="mt-1 text-xs text-neutral-500">Organização do conteúdo</p>
+            <p className="mt-1 text-xs text-neutral-500">Nesta página</p>
           </div>
         </div>
 
@@ -468,7 +468,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                 <div>
                   <h2 className="text-xl font-bold">Notícias</h2>
                   <p className="mt-1 text-sm text-neutral-500">
-                    Gerencie publicações, rascunhos e arquivos.
+                    Gerencie publicações, rascunhos ou arquivos
                   </p>
                 </div>
                 <span className="rounded bg-neutral-100 px-3 py-1 text-sm font-bold">
@@ -552,11 +552,6 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                   <h2 className="text-xl font-bold">
                     {editingPost ? 'Editar notícia' : 'Nova notícia'}
                   </h2>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    {editingPost
-                      ? 'Altere os campos e salve.'
-                      : 'Novas notícias começam como rascunho.'}
-                  </p>
                 </div>
 
                 {editingPost && (
@@ -716,9 +711,9 @@ function AdminPanel({ token, user, onLogout, onBack }) {
         {section === 'categories' && (
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.7fr)]">
             <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
-              <h2 className="text-xl font-bold">Categorias cadastradas</h2>
+              <h2 className="text-xl font-bold">Categorias</h2>
               <p className="mt-1 text-sm text-neutral-500">
-                Organize as notícias por assunto.
+                Organize as notícias por categorias
               </p>
 
               {loading ? (
@@ -779,9 +774,6 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                   <h2 className="text-xl font-bold">
                     {editingCategory ? 'Editar categoria' : 'Nova categoria'}
                   </h2>
-                  <p className="mt-1 text-sm text-neutral-500">
-                    O slug será usado no endereço interno.
-                  </p>
                 </div>
 
                 {editingCategory && (
@@ -857,10 +849,6 @@ function AdminPanel({ token, user, onLogout, onBack }) {
           </div>
         )}
 
-        <p className="mt-8 text-center text-xs leading-5 text-neutral-500">
-          O acesso às operações é validado pelo servidor. As permissões da
-          interface não substituem a autenticação da API.
-        </p>
       </main>
     </div>
   )

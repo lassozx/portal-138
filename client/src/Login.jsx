@@ -114,7 +114,7 @@ function Login({ onLogin, onBack }) {
             </h2>
 
             <p className="mt-2 text-sm text-neutral-500">
-              {registering ? 'Estudantes, responsáveis e comunidade: participe das conversas do portal.' : 'Entre para comentar e acompanhar nossa comunidade escolar.'}
+              {registering ? 'Estudantes, responsáveis e comunidade: participe das conversas do portal.' : 'Entre para comentar e ficar por dentro da nossa comunidade escolar'}
             </p>
           </div>
 
@@ -226,9 +226,6 @@ function Login({ onLogin, onBack }) {
             Voltar ao portal
           </button>
 
-          <p className="text-center text-xs leading-5 text-neutral-500">
-            As contas da comunidade podem comentar e gerenciar o próprio perfil.
-          </p>
         </form>
       </section>
     </main>
