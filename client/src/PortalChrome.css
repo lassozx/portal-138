@@ -16,30 +16,68 @@
 }
 
 .chrome-utility {
-  border-bottom: 1px solid #e9e9e9;
-  background: #f5f5f5;
-  color: #5c5c5c;
-  font-size: 11px;
+  background: var(--portal-red, #e30613);
+  color: #fff;
+  font-size: 12px;
   line-height: 1.5;
 }
 
 .chrome-utility-inner {
   display: flex;
-  min-height: 35px;
+  min-height: 32px;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: flex-end;
+  gap: 20px;
+  padding-inline: 20px;
 }
 
-.chrome-utility-school {
-  font-size: 10px;
-  letter-spacing: 0.09em;
+.chrome-institutions,
+.chrome-social-links {
+  display: flex;
+  align-items: center;
 }
 
-.chrome-utility-school strong {
-  margin-left: 12px;
-  color: var(--portal-ink, #252525);
-  font-weight: 800;
+.chrome-institutions {
+  gap: 24px;
+}
+
+.chrome-utility a {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.chrome-institutions a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.chrome-utility a:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: -3px;
+}
+
+.chrome-social-links a {
+  width: 44px;
+  border-left: 1px solid #ffffff4d;
+}
+
+.chrome-social-links a:last-child {
+  border-right: 1px solid #ffffff4d;
+}
+
+.chrome-social-links a:hover {
+  background: #0000001a;
+}
+
+.chrome-social-links svg {
+  display: block;
+  width: 15px;
+  height: 15px;
 }
 
 .chrome-brand-row {
@@ -332,28 +370,6 @@
     width: calc(100% - 40px);
   }
 
-  .chrome-utility-inner {
-    min-height: 30px;
-    font-size: 9px;
-  }
-
-  .chrome-utility-school {
-    font-size: 9px;
-  }
-
-  .chrome-utility-school strong {
-    margin-left: 0;
-  }
-
-  .chrome-utility-school {
-    font-size: 0;
-  }
-
-  .chrome-utility-school strong {
-    font-size: 9px;
-    letter-spacing: 0.04em;
-  }
-
   .chrome-brand-row {
     min-height: 97px;
     gap: 18px;
@@ -444,6 +460,21 @@
 }
 
 @media (max-width: 430px) {
+  .chrome-utility-inner {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 16px;
+    padding-inline: 12px;
+  }
+
+  .chrome-institutions {
+    gap: 18px;
+  }
+
+  .chrome-utility a {
+    min-height: 44px;
+  }
+
   .chrome-account:has(button + button) {
     width: 100%;
     margin-left: 0;
