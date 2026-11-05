@@ -537,12 +537,21 @@ function App() {
           </div>
           <div className="portal-about-copy">
             <p className="portal-eyebrow">SOBRE O PORTAL</p>
-            <h2>Este espaço também é seu.</h2>
+            <h2>Um projeto de estudante, feito para a escola.</h2>
             <p>
-              O Portal 138 reúne notícias, projetos e acontecimentos relacionados à comunidade
-              escolar do SESI 138. Um lugar para dar voz às nossas ideias e valorizar as histórias
-              de quem faz a escola acontecer.
+              O Portal 138 foi criado e desenvolvido por <strong>Lasso, estudante do SENAI</strong>,
+              para reunir notícias, projetos e acontecimentos da comunidade escolar do SESI 138.
+              Uma forma de colocar o aprendizado em prática e dar espaço às histórias de quem
+              faz a escola acontecer.
             </p>
+            <div className="portal-about-technologies">
+              <h3>Tecnologias utilizadas</h3>
+              <ul aria-label="Tecnologias utilizadas no Portal 138">
+                {['React', 'Vite', 'Tailwind CSS', 'Node.js', 'Express', 'Prisma', 'PostgreSQL'].map(
+                  (technology) => <li key={technology}>{technology}</li>,
+                )}
+              </ul>
+            </div>
             <a href="#inicio" className="portal-text-link">
               Voltar ao início <span aria-hidden="true">↑</span>
             </a>

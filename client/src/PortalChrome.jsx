@@ -17,22 +17,6 @@ function SearchIcon() {
   )
 }
 
-function Wordmark({ footer = false }) {
-  return (
-    <a
-      href="#inicio"
-      className={`chrome-wordmark${footer ? ' chrome-wordmark-footer' : ''}`}
-      aria-label="Portal 138 - Início"
-    >
-      <span className="chrome-wordmark-name">
-        PORTAL<span>138</span>
-        <span className="chrome-wordmark-dot" />
-      </span>
-      <span className="chrome-wordmark-description">NOSSA ESCOLA. NOSSAS HISTÓRIAS.</span>
-    </a>
-  )
-}
-
 export function PortalHeader({
   session,
   onLogin,
@@ -168,51 +152,44 @@ export function PortalHeader({
 export function PortalFooter() {
   return (
     <footer className="chrome-footer">
-      <div className="chrome-container chrome-footer-grid">
-        <div className="chrome-footer-brand">
-          <Wordmark footer />
-          <p>Um espaço para as notícias, as ideias e as pessoas que fazem parte da nossa escola.</p>
-        </div>
-
-        <div className="chrome-footer-column">
-          <h2>Explore o portal</h2>
-          <ul>
-            <li>
-              <a href="#inicio">Início</a>
-            </li>
-            <li>
-              <a href="#noticias">Últimas notícias</a>
-            </li>
-          </ul>
-        </div>
-
-        <div className="chrome-footer-column">
-          <h2>Nossa comunidade</h2>
-          <ul>
-            <li>
-              <a href="#sobre">Sobre o Portal 138</a>
-            </li>
-          </ul>
-        </div>
-
-        <div className="chrome-footer-column chrome-footer-purpose">
-          <span className="chrome-footer-label">FEITO DE HISTÓRIAS</span>
-          <h2>
-            A escola acontece
-            <br />
-            todos os dias.
-          </h2>
-          <p>Acompanhe as conquistas e os acontecimentos da comunidade SESI 138.</p>
-          <a href="#noticias">
-            Fique por dentro <span aria-hidden="true">→</span>
-          </a>
+      <div className="chrome-footer-info">
+        <div className="chrome-container chrome-footer-info-inner">
+          <div className="chrome-footer-identity">
+            <a href="#inicio" aria-label="Portal 138 - Início">PORTAL 138</a>
+            <p>Informação, educação e comunidade.</p>
+          </div>
+          <div className="chrome-footer-detail">
+            <h2>Nossa comunidade</h2>
+            <p>Notícias, projetos e histórias<br />da comunidade escolar SESI 138.</p>
+          </div>
+          <div className="chrome-footer-detail">
+            <h2>Projeto estudantil</h2>
+            <p>Desenvolvido por <strong>Lasso</strong>,<br />estudante do <strong>SENAI</strong>.</p>
+          </div>
         </div>
       </div>
 
-      <div className="chrome-footer-base">
-        <div className="chrome-container chrome-footer-base-inner">
-          <span>Portal 138 · Comunidade escolar SESI 138</span>
-          <span>Informação que aproxima.</span>
+      <div className="chrome-footer-links">
+        <div className="chrome-container chrome-footer-links-inner">
+          <nav className="chrome-footer-nav" aria-label="Navegação do rodapé">
+            <a href="#inicio">Início</a>
+            <a href="#noticias">Últimas notícias</a>
+            <a href="#sobre">Sobre o Portal 138</a>
+          </nav>
+          <a
+            className="chrome-footer-repository"
+            href="https://github.com/lassozx/portal-138"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 .75a11.25 11.25 0 0 0-3.56 21.92c.56.1.77-.24.77-.54v-2.1c-3.13.68-3.79-1.33-3.79-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.68.08-.68 1.13.08 1.73 1.16 1.73 1.16 1 1.72 2.63 1.22 3.27.94.1-.73.4-1.22.71-1.5-2.5-.29-5.13-1.25-5.13-5.56 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.1 1.15a10.8 10.8 0 0 1 5.64 0c2.15-1.46 3.1-1.15 3.1-1.15.61 1.55.23 2.7.11 2.98.72.79 1.16 1.8 1.16 3.02 0 4.32-2.64 5.27-5.15 5.55.4.35.76 1.03.76 2.08v3.09c0 .3.2.65.77.54A11.25 11.25 0 0 0 12 .75Z" />
+            </svg>
+            <span>Código no GitHub<span className="chrome-sr-only"> (abre em nova aba)</span></span>
+          </a>
+        </div>
+        <div className="chrome-container chrome-footer-copyright">
+          <p>© {new Date().getFullYear()} Portal 138 · Desenvolvido por Lasso, estudante do SENAI.</p>
         </div>
       </div>
     </footer>
