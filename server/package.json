@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "postinstall": "prisma skills sync || exit 0",
     "test": "jest --runInBand"
   },
   "keywords": [],
@@ -36,6 +35,9 @@
   "jest": {
     "setupFiles": [
       "<rootDir>/tests/setup.js"
+    ],
+    "testMatch": [
+      "<rootDir>/tests/**/*.test.js"
     ]
   }
 }

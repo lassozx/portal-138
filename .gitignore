@@ -30,3 +30,11 @@ Thumbs.db
 
 # Imagens enviadas pelo painel
 server/uploads/
+
+# Clientes Prisma gerados (o cliente usado é gerado em node_modules)
+server/src/generated/
+
+# Cópias locais de skills de ferramentas; a referência fica em server/.agents/
+server/.claude/
+server/.cursor/
+server/.devin/
