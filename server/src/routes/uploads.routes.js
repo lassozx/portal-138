@@ -1,13 +1,14 @@
 const express = require('express')
 const { randomUUID } = require('node:crypto')
-const { mkdir, writeFile } = require('node:fs/promises')
-const path = require('node:path')
 const { rateLimit } = require('express-rate-limit')
 const { authenticateToken, authorizeRoles } = require('../middlewares/auth')
+const { getStorageConfig } = require('../config/storage')
+const { createImageStorage } = require('../services/imageStorage')
 
 const router = express.Router()
 const MAX_BYTES = 5 * 1024 * 1024
-const uploadDirectory = path.resolve(__dirname, '../../', process.env.UPLOAD_DIR || 'uploads')
+const storageConfig = getStorageConfig()
+const storage = createImageStorage(storageConfig)
 const imageTypes = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
 const uploadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -52,10 +53,9 @@ router.post('/', authenticateToken, authorizeRoles('ADMIN', 'EDITOR'), uploadLim
       return res.status(400).json({ message: 'Arquivo inválido. Escolha uma imagem JPG, PNG ou WebP válida.' })
     }
     try {
-      await mkdir(uploadDirectory, { recursive: true })
       const filename = `${randomUUID()}.${imageTypes[req.imageType]}`
-      await writeFile(path.join(uploadDirectory, filename), req.body, { flag: 'wx', mode: 0o644 })
-      res.status(201).json({ message: 'Imagem enviada com sucesso.', url: `/api/uploads/${filename}` })
+      const url = await storage.save(req.body, req.imageType, filename)
+      res.status(201).json({ message: 'Imagem enviada com sucesso.', url })
     } catch (error) { next(error) }
   },
 )
@@ -64,8 +64,9 @@ router.get('/:filename', (req, res, next) => {
   if (!/^[a-f0-9-]{36}\.(jpg|png|webp)$/.test(req.params.filename)) {
     return res.status(404).json({ message: 'Imagem não encontrada.' })
   }
+  if (storageConfig.provider !== 'local') return res.status(404).json({ message: 'Imagem não encontrada.' })
   res.sendFile(req.params.filename, {
-    root: uploadDirectory,
+    root: storageConfig.directory,
     dotfiles: 'deny',
     headers: {
       'Cache-Control': 'public, max-age=31536000, immutable',
