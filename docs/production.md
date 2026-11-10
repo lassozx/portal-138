@@ -176,3 +176,26 @@ Aponte uma instância de conferência para esse banco e para a pasta de uploads
 restaurada e abra as notícias e imagens. Esses comandos não agendam backups nem
 executam uma restauração automaticamente; configure a rotina e a retenção na
 hospedagem escolhida e confirme o resultado com uma restauração de teste.
+
+## Auditoria de dependências
+
+Na pasta `server`, use `npm audit --omit=dev` para consultar as ocorrências na
+instalação de produção e `npm audit` para incluir ferramentas de desenvolvimento.
+Faça a mesma conferência na pasta `client` para as bibliotecas do cliente.
+
+Na revisão de 10/11/2026, a instalação de produção do servidor ficou sem
+ocorrências após aplicar um override restrito de `swagger-jsdoc` para
+`glob ^14.0.4`, que usa a linha corrigida do `minimatch`. A documentação gerada
+foi comparada com a anterior, sem perda de caminhos ou operações, e há um teste
+de regressão para essa geração. Esse override deve ser revisto quando o
+`swagger-jsdoc` atualizar suas próprias dependências.
+
+A auditoria completa do servidor ainda indicou 20 ocorrências em ferramentas de
+desenvolvimento, como Jest e nodemon, e suas dependências. As versões diretas
+foram mantidas: a correção automática forçada propunha rebaixar o Jest para uma
+versão antiga. Esses avisos não aparecem no relatório com `--omit=dev`, mas devem
+continuar sendo acompanhados para aplicar correções compatíveis quando forem
+disponibilizadas. O número de ocorrências pode mudar com novas publicações do npm.
+
+Não aplique `npm audit fix --force` automaticamente. Atualize de forma restrita,
+confira o lockfile e execute os testes e o build antes de integrar uma alteração.

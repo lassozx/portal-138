@@ -40,5 +40,10 @@
     "testMatch": [
       "<rootDir>/tests/**/*.test.js"
     ]
+  },
+  "overrides": {
+    "swagger-jsdoc": {
+      "glob": "^14.0.4"
+    }
   }
 }
