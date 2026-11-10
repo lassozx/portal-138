@@ -150,7 +150,7 @@ function Login({ onLogin, onBack }) {
               autoComplete="username"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="seuemail@exemplo.com"
+              placeholder="lseuemai@exemplo.com"
               required
               disabled={loading}
               className="w-full rounded-md border border-neutral-300 px-4 py-3 text-neutral-900 outline-none transition placeholder:text-neutral-500 focus:border-red-700 focus:ring-2 focus:ring-red-100 disabled:bg-neutral-100"
@@ -194,7 +194,7 @@ function Login({ onLogin, onBack }) {
             <div>
               <label htmlFor="register-confirm" className="mb-2 block text-sm font-semibold text-neutral-700">Confirmar senha</label>
               <input id="register-confirm" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required disabled={loading} className="w-full rounded-md border border-neutral-300 bg-white px-4 py-3 outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100 disabled:bg-neutral-100" />
-              <p className="mt-2 text-xs text-neutral-500">Use pelo menos 8 caracteres. Acentos e emojis ocupam mais espaço no limite da senha.</p>
+              <p className="mt-2 text-xs text-neutral-500">Use pelo menos 8 caracteres.</p>
             </div>
           )}
 
