@@ -22,8 +22,11 @@ npm --prefix server run start:prod
 
 Abra `http://localhost:3000`. O site, os arquivos compilados, a API e os uploads
 agora vêm da mesma porta. `start:prod` define `NODE_ENV=production` no processo;
-não altera o arquivo `.env`. Nenhuma migração nova foi adicionada por esta
-preparação. Para voltar ao desenvolvimento, pare esse processo e use os dois
+não altera o arquivo `.env`. Antes de atualizar para esta versão, gere o cliente
+Prisma e aplique as migrações: `(cd server && npx --no-install prisma generate &&
+npx --no-install prisma migrate deploy)`. A revisão de segurança adiciona
+`User.sessionVersion`, sem remover contas ou notícias. Para voltar ao
+desenvolvimento, pare esse processo e use os dois
 comandos `run dev` habituais, conforme o [guia de instalação](installation.md).
 
 Se aparecer `EADDRINUSE`, outra aplicação já ocupa a porta configurada. Pare a

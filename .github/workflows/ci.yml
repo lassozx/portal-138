@@ -35,6 +35,8 @@ jobs:
           cache-dependency-path: client/package-lock.json
       - name: Instalar dependências
         run: npm ci
+      - name: Auditar dependências de produção
+        run: npm audit --omit=dev
       - name: Testar cliente
         run: npm test
       - name: Gerar build
@@ -78,6 +80,8 @@ jobs:
           cache-dependency-path: server/package-lock.json
       - name: Instalar dependências
         run: npm ci
+      - name: Auditar dependências de produção
+        run: npm audit --omit=dev
       - name: Gerar cliente Prisma
         run: npx --no-install prisma generate
       - name: Aplicar migrações no banco de teste

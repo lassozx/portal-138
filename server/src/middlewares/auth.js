@@ -39,6 +39,7 @@ async function authenticateToken(req, res, next) {
         name: true,
         email: true,
         role: true,
+        sessionVersion: true,
       },
     })
 
@@ -48,7 +49,16 @@ async function authenticateToken(req, res, next) {
       })
     }
 
-    req.user = user
+    // Tokens issued before this migration belong to version zero.
+    const sessionVersion = decoded.sessionVersion ?? 0
+    if (!Number.isSafeInteger(sessionVersion) || sessionVersion < 0 || sessionVersion !== (user.sessionVersion ?? 0)) {
+      return res.status(401).json({ message: 'Token inválido ou expirado.' })
+    }
+
+    res.set('Cache-Control', 'no-store')
+    req.sessionVersion = sessionVersion
+    const { sessionVersion: _, ...publicUser } = user
+    req.user = publicUser
     return next()
   } catch (error) {
     if (error.name !== 'JsonWebTokenError' &&

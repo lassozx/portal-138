@@ -20,10 +20,14 @@ app.set('trust proxy', runtime.trustProxy)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
+      baseUri: ["'none'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
       imgSrc: ["'self'", 'data:', 'https:'],
       upgradeInsecureRequests: runtime.isProduction ? [] : null,
     },
   },
+  frameguard: { action: 'deny' },
 }))
 app.use(cors({ origin: runtime.allowedOrigins.length ? runtime.allowedOrigins : !runtime.isProduction }))
 app.use(express.json())

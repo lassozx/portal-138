@@ -8,6 +8,7 @@ jest.mock('../../../src/config/prisma', () => ({
 
 jest.mock('../../../src/middlewares/rateLimit', () => ({
   authLimiter: (req, res, next) => next(),
+  passwordChangeLimiter: (req, res, next) => next(),
 }))
 
 jest.mock('bcryptjs', () => ({
@@ -484,7 +485,7 @@ describe('PUT /api/auth/profile', () => {
 
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: userId },
+        where: { id: userId, sessionVersion: 0 },
         data: { name: 'Nome Atualizado' },
       }),
     )
@@ -505,6 +506,16 @@ describe('PUT /api/auth/profile', () => {
     'Erro interno ao atualizar perfil.'
   )
 })
+
+  it('não atualiza usando uma versão de sessão revogada enquanto a requisição estava em andamento', async () => {
+    prisma.user.update.mockRejectedValue({ code: 'P2025' })
+    const response = await request(app).put('/api/auth/profile')
+      .set('Authorization', `Bearer ${token}`).send({ name: 'Novo nome' })
+    expect(response.status).toBe(401)
+    expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: userId, sessionVersion: 0 },
+    }))
+  })
 
   it('deve rejeitar uma atualização sem campos', async () => {
     const response = await request(app)
@@ -608,8 +619,8 @@ describe('PUT /api/auth/profile', () => {
 
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: userId },
-        data: { passwordHash: 'novo-hash-de-senha' },
+        where: { id: userId, sessionVersion: 0 },
+        data: { passwordHash: 'novo-hash-de-senha', sessionVersion: { increment: 1 } },
       }),
     )
 
@@ -645,7 +656,7 @@ describe('PUT /api/auth/profile', () => {
     expect(response.status).toBe(200)
     expect(bcrypt.hash).toHaveBeenCalledWith(newPassword, 12)
     expect(prisma.user.update).toHaveBeenCalledWith(expect.objectContaining({
-      data: { passwordHash: 'novo-hash-de-senha' },
+      data: { passwordHash: 'novo-hash-de-senha', sessionVersion: { increment: 1 } },
     }))
   })
 

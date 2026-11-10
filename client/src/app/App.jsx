@@ -206,6 +206,7 @@ function App() {
         user={session.user}
         onBack={() => setView('public')}
         onUserUpdated={updateUser}
+        onSessionUpdated={signIn}
       />
     )
   }
