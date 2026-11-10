@@ -4,9 +4,20 @@ const jwt = require('jsonwebtoken')
 const { z } = require('zod')
 const prisma = require('../config/prisma')
 const { authenticateToken } = require('../middlewares/auth')
-const { authLimiter } = require('../middlewares/rateLimit')
+const { authLimiter, passwordChangeLimiter } = require('../middlewares/rateLimit')
 
 const router = express.Router()
+router.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store')
+  next()
+})
+
+function createToken(user) {
+  return jwt.sign({ userId: user.id, sessionVersion: user.sessionVersion ?? 0 }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+    algorithm: 'HS256',
+  })
+}
 
 const loginSchema = z.object({
   email: z.string().trim().email(),
@@ -190,9 +201,7 @@ router.post('/login', authLimiter, async (req, res) => {
       })
     }
 
-    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '1h',
-    })
+    const token = createToken(user)
 
     return res.json({
       message: 'Login realizado com sucesso.',
@@ -295,7 +304,7 @@ const profileSchema = z
  *       '500':
  *         description: Erro interno do servidor
  */
-router.put('/profile', authenticateToken, async (req, res) => {
+router.put('/profile', authenticateToken, passwordChangeLimiter, async (req, res) => {
   try {
     const validation = profileSchema.safeParse(req.body)
 
@@ -337,10 +346,11 @@ router.put('/profile', authenticateToken, async (req, res) => {
       }
 
       dataToUpdate.passwordHash = await bcrypt.hash(newPassword, 12)
+      dataToUpdate.sessionVersion = { increment: 1 }
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: req.user.id },
+      where: { id: req.user.id, sessionVersion: req.sessionVersion },
       data: dataToUpdate,
       select: {
         id: true,
@@ -349,14 +359,20 @@ router.put('/profile', authenticateToken, async (req, res) => {
         role: true,
         createdAt: true,
         updatedAt: true,
+        sessionVersion: true,
       },
     })
 
+    const { sessionVersion, ...publicUser } = updatedUser
     return res.json({
       message: 'Perfil atualizado com sucesso.',
-      user: updatedUser,
+      user: publicUser,
+      ...(newPassword !== undefined ? { token: createToken(updatedUser) } : {}),
     })
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(401).json({ message: 'Sua sessão foi alterada. Entre novamente.' })
+    }
     console.error('Erro ao atualizar perfil:', error.message)
 
     return res.status(500).json({

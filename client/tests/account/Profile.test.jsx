@@ -35,3 +35,15 @@ it.each(['á'.repeat(36), '😀'.repeat(18)])('altera a senha com exatamente 72 
   }))
   expect(screen.getByLabelText('Nova senha')).toHaveValue('')
 })
+
+it('substitui a sessão atual pelo token renovado após alterar a senha', async () => {
+  const onSessionUpdated = vi.fn()
+  fetch.mockResolvedValue({ ok: true, json: async () => ({ user, token: 'token-renovado' }) })
+  render(<Profile user={user} token="token-antigo" onSessionUpdated={onSessionUpdated} />)
+  for (const [label, value] of [['Senha atual', 'SenhaAtual123'], ['Nova senha', 'NovaSenha123'], ['Confirmar nova senha', 'NovaSenha123']]) {
+    fireEvent.change(screen.getByLabelText(label), { target: { value } })
+  }
+  fireEvent.click(screen.getByRole('button', { name: 'Alterar senha' }))
+  expect(await screen.findByRole('status')).toHaveTextContent('Senha alterada com sucesso.')
+  expect(onSessionUpdated).toHaveBeenCalledWith({ token: 'token-renovado', user })
+})

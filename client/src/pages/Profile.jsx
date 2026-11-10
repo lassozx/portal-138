@@ -6,7 +6,7 @@ const inputClass =
 
 const labelClass = 'block text-sm font-semibold text-neutral-700'
 
-function Profile({ token, user, onBack, onUserUpdated }) {
+function Profile({ token, user, onBack, onUserUpdated, onSessionUpdated }) {
   const [name, setName] = useState(user?.name || '')
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -102,6 +102,7 @@ function Profile({ token, user, onBack, onUserUpdated }) {
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
+      if (result.token) onSessionUpdated?.({ token: result.token, user: result.user || user })
       setNotice('Senha alterada com sucesso.')
     } catch (err) {
       setError(err.message || 'Erro ao alterar a senha.')

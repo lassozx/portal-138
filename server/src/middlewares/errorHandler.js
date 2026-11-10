@@ -1,4 +1,8 @@
 function errorHandler(err, req, res, next) {
+// JSON parser messages can include fragments of credentials from the request.
+if (err.type === 'entity.parse.failed') {
+  return res.status(400).json({ status: 'error', message: 'JSON inválido na requisição.' })
+}
 console.error('Erro na aplicação:', {
 message: err.message,
 method: req.method,

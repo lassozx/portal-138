@@ -24,6 +24,14 @@ next = jest.fn()
 
 })
 
+it('não expõe nem registra trechos do corpo quando o JSON está malformado', () => {
+  const error = Object.assign(new SyntaxError('Unexpected token in {"password":"sensitive"'), { type: 'entity.parse.failed', statusCode: 400 })
+  errorHandler(error, req, res, next)
+  expect(res.status).toHaveBeenCalledWith(400)
+  expect(res.json).toHaveBeenCalledWith({ status: 'error', message: 'JSON inválido na requisição.' })
+  expect(console.error).not.toHaveBeenCalled()
+})
+
 afterEach(() => {
 jest.restoreAllMocks()
 })

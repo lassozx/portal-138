@@ -16,6 +16,7 @@ PostgreSQL.
   permissões, armazenamento e endpoints.
 - [Produção e backups](docs/production.md): execução sem Vite, variáveis de ambiente,
   persistência e procedimentos de cópia e restauração.
+- [Segurança](docs/security.md): proteções, testes da revisão e limites antes da publicação.
 - [Desenvolvimento](docs/development.md): testes, build, CI, estrutura do código
   e configuração fora do ambiente local.
 

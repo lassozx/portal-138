@@ -48,6 +48,18 @@ inicial à pessoa por um canal privado e peça que ela a altere em **Meu perfil*
 O primeiro administrador continua sendo criado pelo script `create-admin.js`.
 Não há migração de banco nem dependência nova para estas duas funcionalidades.
 
+## Sessões e troca de senha
+
+Trocar a senha em **Meu perfil** invalida os tokens anteriores da conta. A sessão
+em que a alteração foi feita recebe um token novo e continua funcionando;
+outros navegadores precisam entrar novamente. A API verifica a versão da sessão
+no banco em cada requisição autenticada, além da assinatura e validade do JWT.
+
+Há um limite de 10 tentativas de alteração de senha por conta a cada 15 minutos.
+Alterar apenas o nome continua disponível quando esse limite é atingido. A
+migração `20261110120000_add_session_version` precisa ser aplicada antes de
+iniciar esta versão. Veja os testes e limites no [guia de segurança](security.md).
+
 ### Endpoints do painel
 
 | Método e endereço | Acesso | Uso |
