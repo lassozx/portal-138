@@ -4,7 +4,8 @@ const env = require('./config/env')
 const app = require('./app')
 const prisma = require('./config/prisma')
 
-const server = app.listen(env.PORT, () => {
+const server = app.listen(env.PORT, error => {
+  if (error) return
   console.log(`Servidor do Portal 138 rodando na porta ${env.PORT}`)
 })
 
@@ -32,7 +33,13 @@ function shutdown(signal) {
 process.on('SIGTERM', () => shutdown('SIGTERM'))
 process.on('SIGINT', () => shutdown('SIGINT'))
 server.on('error', async error => {
-  console.error(`Não foi possível iniciar o servidor: ${error.message}`)
-  await prisma.$disconnect()
-  process.exit(1)
+  const message = error.code === 'EADDRINUSE'
+    ? `A porta ${env.PORT} já está em uso. Encerre a outra instância da API ou escolha outra PORT.`
+    : `Não foi possível iniciar o servidor: ${error.message}`
+  console.error(message)
+  try {
+    await prisma.$disconnect()
+  } finally {
+    process.exit(1)
+  }
 })

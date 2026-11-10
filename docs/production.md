@@ -26,6 +26,17 @@ não altera o arquivo `.env`. Nenhuma migração nova foi adicionada por esta
 preparação. Para voltar ao desenvolvimento, pare esse processo e use os dois
 comandos `run dev` habituais, conforme o [guia de instalação](installation.md).
 
+Se aparecer `EADDRINUSE`, outra aplicação já ocupa a porta configurada. Pare a
+API que estiver rodando em outro terminal com `Ctrl+C`, ou teste em uma porta
+livre, sem alterar o `.env`:
+
+```sh
+PORT=3001 npm --prefix server run start:prod
+```
+
+Nesse caso, abra `http://localhost:3001`. A variável passada no comando tem
+precedência sobre o valor do `.env`.
+
 Se o build não existir, o servidor informa o comando necessário e não inicia
 uma página incompleta. As notícias continuam usando endereços com hash, como
 `/#/noticias/feira-de-ciencias`; o hash não é enviado ao servidor.
