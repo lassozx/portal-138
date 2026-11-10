@@ -48,12 +48,12 @@ export default function CoverImageInput({ token, value, onChange, onBusyChange, 
   }
 
   return (
-    <fieldset className="space-y-3 rounded-md border border-neutral-200 p-4" disabled={disabled || uploading}>
+    <fieldset className="min-w-0 space-y-3 rounded-md border border-neutral-200 p-4" disabled={disabled || uploading}>
       <legend className="px-1 text-sm font-semibold text-neutral-700">Imagem de capa</legend>
       <label className="block text-sm font-semibold text-neutral-700">
         Enviar imagem de capa
         <input type="file" accept="image/jpeg,image/png,image/webp" onChange={upload}
-          aria-describedby="cover-image-help" className="mt-2 block w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-red-50 file:px-3 file:py-2 file:font-semibold file:text-red-700" />
+          aria-describedby="cover-image-help" className="mt-2 block min-w-0 max-w-full w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-red-50 file:px-3 file:py-2 file:font-semibold file:text-red-700" />
       </label>
       <p id="cover-image-help" className="text-xs text-neutral-500">JPG, PNG ou WebP, até 5 MB. A imagem será vinculada ao salvar a notícia.</p>
       {uploading && <p role="status" className="text-sm text-neutral-600">Enviando imagem...</p>}
@@ -68,7 +68,7 @@ export default function CoverImageInput({ token, value, onChange, onBusyChange, 
         URL da imagem de capa
         <input type="url" value={value.startsWith('/api/uploads/') ? '' : value}
           onChange={(event) => onChange(event.target.value)} placeholder="Ou cole um endereço https://..."
-          className="mt-1 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm focus:border-red-700" />
+          className="mt-1 min-w-0 max-w-full w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm focus:border-red-700" />
       </label>
     </fieldset>
   )

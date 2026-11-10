@@ -20,7 +20,7 @@ const EMPTY_CATEGORY = {
 }
 
 const inputClass =
-  'mt-1 w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100'
+  'mt-1 min-w-0 max-w-full w-full rounded-md border border-neutral-300 bg-white px-3 py-2.5 text-sm outline-none transition focus:border-red-700 focus:ring-2 focus:ring-red-100'
 
 const labelClass = 'block text-sm font-semibold text-neutral-700'
 
@@ -475,16 +475,16 @@ function AdminPanel({ token, user, onLogout, onBack }) {
         {section === 'users' && isAdmin && <UserManagement token={token} currentUser={user} />}
 
         {section === 'posts' && (
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]">
-            <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
-              <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]">
+            <section className="min-w-0 rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
+              <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-bold">Notícias</h2>
                   <p className="mt-1 text-sm text-neutral-500">
                     Gerencie publicações, rascunhos ou arquivos
                   </p>
                 </div>
-                <span className="rounded bg-neutral-100 px-3 py-1 text-sm font-bold">
+                <span className="shrink-0 rounded bg-neutral-100 px-3 py-1 text-sm font-bold">
                   {posts.length} de {pagination.total}
                 </span>
               </div>
@@ -508,7 +508,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <h3 className="break-words font-bold">
+                          <h3 className="font-bold [overflow-wrap:anywhere]">
                             {post.title}
                           </h3>
                           <p className="mt-1 break-all text-xs text-neutral-500">
@@ -521,7 +521,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                               {statusLabel(post.status)}
                             </span>
                             {post.category?.name && (
-                              <span className="rounded bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600">
+                              <span className="max-w-full rounded bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-600 [overflow-wrap:anywhere]">
                                 {post.category.name}
                               </span>
                             )}
@@ -561,7 +561,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
               )}
             </section>
 
-            <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
+            <section className="min-w-0 rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-bold">
@@ -603,7 +603,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                 </section>
               )}
 
-              <form hidden={previewing} onSubmit={savePost} className="space-y-4">
+              <form hidden={previewing} onSubmit={savePost} className="min-w-0 space-y-4">
                 <label className={labelClass}>
                   Título *
                   <input
@@ -723,8 +723,8 @@ function AdminPanel({ token, user, onLogout, onBack }) {
         )}
 
         {section === 'categories' && (
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.7fr)]">
-            <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
+          <div className="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.7fr)]">
+            <section className="min-w-0 rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
               <h2 className="text-xl font-bold">Categorias</h2>
               <p className="mt-1 text-sm text-neutral-500">
                 Organize as notícias por categorias
@@ -745,7 +745,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                       key={category.id}
                       className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-neutral-200 p-4"
                     >
-                      <div>
+                      <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
                         <h3 className="font-bold">{category.name}</h3>
                         <p className="mt-1 text-xs text-neutral-500">
                           /{category.slug}
@@ -782,7 +782,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
               )}
             </section>
 
-            <section className="rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
+            <section className="min-w-0 rounded-lg border border-neutral-200 bg-white p-5 sm:p-6">
               <div className="mb-5 flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-bold">
@@ -801,7 +801,7 @@ function AdminPanel({ token, user, onLogout, onBack }) {
                 )}
               </div>
 
-              <form onSubmit={saveCategory} className="space-y-4">
+              <form onSubmit={saveCategory} className="min-w-0 space-y-4">
                 <label className={labelClass}>
                   Nome *
                   <input
