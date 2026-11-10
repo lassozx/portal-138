@@ -58,3 +58,8 @@ Não há migração de banco nem dependência nova para estas duas funcionalidad
 | `POST /api/admin/users` | ADMIN | Cria uma conta com `name`, `email`, `password` e `role`. |
 | `PATCH /api/admin/users/:id/role` | ADMIN | Altera o perfil com `{ "role": "USER" }`, `EDITOR` ou `ADMIN`. |
 
+
+## Publicação e cópias de dados
+
+Veja o [guia de produção e backups](production.md) para preservar o PostgreSQL e
+a pasta de imagens ao atualizar ou reiniciar a aplicação.

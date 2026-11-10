@@ -10,11 +10,22 @@ const commentsRoutes = require('./routes/comments.routes')
 const errorHandler = require('./middlewares/errorHandler')
 const swaggerUi = require('swagger-ui-express')
 const swaggerSpec = require('./config/swagger')
+const { getRuntimeConfig } = require('./config/runtime')
+const { createClientRouter } = require('./middlewares/client')
 
+const runtime = getRuntimeConfig()
 const app = express()
+app.set('trust proxy', runtime.trustProxy)
 
-app.use(helmet())
-app.use(cors())
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      imgSrc: ["'self'", 'data:', 'https:'],
+      upgradeInsecureRequests: runtime.isProduction ? [] : null,
+    },
+  },
+}))
+app.use(cors({ origin: runtime.allowedOrigins.length ? runtime.allowedOrigins : !runtime.isProduction }))
 app.use(express.json())
 // Documentação interativa da API
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
@@ -58,6 +69,9 @@ app.use('/api/uploads', require('./routes/uploads.routes'))
 app.use('/api/posts', postsRoutes)
 app.use('/api/categories', categoriesRoutes)
 app.use('/api/comments', commentsRoutes)
+app.use('/api', (req, res) => res.status(404).json({ message: 'Endpoint não encontrado.' }))
+if (runtime.serveClient) app.use(createClientRouter(runtime.clientDirectory))
+app.use((req, res) => res.status(404).json({ message: 'Recurso não encontrado.' }))
 app.use(errorHandler)
 
 module.exports = app

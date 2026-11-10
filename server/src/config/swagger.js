@@ -14,8 +14,8 @@ info: {
 
 servers: [
   {
-    url: 'http://localhost:3000',
-    description: 'Servidor local de desenvolvimento',
+    url: '/',
+    description: 'Servidor atual do portal',
   },
 ],
 
