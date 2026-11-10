@@ -1,4 +1,5 @@
 const { z } = require('zod')
+const { getRuntimeConfig } = require('./runtime')
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1, 'DATABASE_URL não foi definida'),
@@ -21,4 +22,9 @@ if (!result.success) {
   process.exit(1)
 }
 
-module.exports = result.data
+try {
+  module.exports = { ...result.data, ...getRuntimeConfig() }
+} catch (error) {
+  console.error(error.message)
+  process.exit(1)
+}

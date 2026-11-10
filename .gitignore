@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+!.env.*.example
 
 # Logs
 logs/
@@ -38,3 +39,6 @@ server/src/generated/
 server/.claude/
 server/.cursor/
 server/.devin/
+
+# Backups locais (podem conter dados pessoais)
+backups/

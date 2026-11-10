@@ -40,11 +40,9 @@ verificações obrigatórias nem publica o site.
 
 ## Configuração fora do ambiente local
 
-As credenciais do Compose são apenas para desenvolvimento. Use credenciais
-próprias e um segredo JWT exclusivo em cada ambiente; não versione o arquivo
-`.env`. Para hospedar o build, configure o servidor para entregar os arquivos de
-`client/dist` e encaminhar `/api` à API: o proxy do Vite funciona somente durante
-o desenvolvimento.
+O servidor pode entregar o build do cliente e a API na mesma origem. Consulte o
+[guia de produção e backups](production.md) para usar `start:prod`, configurar
+variáveis de ambiente, volumes, proxy, cópias de dados e restauração.
 
 ## Organização do código
 

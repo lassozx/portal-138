@@ -14,6 +14,8 @@ PostgreSQL.
   variáveis de ambiente e criação do primeiro administrador.
 - [Painel administrativo](docs/administration.md): imagens, usuários,
   permissões, armazenamento e endpoints.
+- [Produção e backups](docs/production.md): execução sem Vite, variáveis de ambiente,
+  persistência e procedimentos de cópia e restauração.
 - [Desenvolvimento](docs/development.md): testes, build, CI, estrutura do código
   e configuração fora do ambiente local.
 
@@ -70,3 +72,15 @@ npm --prefix client run dev
 
 Abra `http://localhost:5173`. A API usa `http://localhost:3000`, com documentação
 interativa em `http://localhost:3000/api-docs`.
+
+## Conferir a versão compilada
+
+Pare a API de desenvolvimento para liberar a porta 3000 e execute na raiz:
+
+```sh
+npm --prefix client run build
+npm --prefix server run start:prod
+```
+
+Abra `http://localhost:3000`. Veja o [guia de produção](docs/production.md) antes
+de configurar uma hospedagem.
