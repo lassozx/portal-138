@@ -84,3 +84,8 @@ retirado; a geração do cliente Prisma continua explícita na instalação e no
 Se precisar atualizar as skills de uma ferramenta localmente, execute
 `npx prisma skills sync` na pasta `server` e revise as mudanças da referência
 em `.agents` antes de versionar.
+
+## Apresentação no GitHub
+
+Para atualizar as prévias da interface, o cartão de compartilhamento e os
+campos About e Topics do GitHub, consulte o [guia de apresentação do repositório](github.md).
