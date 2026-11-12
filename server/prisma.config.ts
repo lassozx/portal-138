@@ -1,9 +1,10 @@
 import 'dotenv/config'
-import { defineConfig, env } from 'prisma/config'
+import { defineConfig } from 'prisma/config'
+import { getPrismaConnectionString } from './src/config/database.js'
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
   datasource: {
-    url: env('DATABASE_URL'),
+    url: getPrismaConnectionString(),
   },
 })

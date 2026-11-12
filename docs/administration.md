@@ -10,7 +10,11 @@ enviar imagens. A prévia aparece após o envio; salve a notícia para vincular 
 capa. Também é possível continuar usando uma URL externa ou remover a capa.
 
 A API verifica o tipo informado e a assinatura do arquivo, gera um nome próprio
-e salva as imagens em `server/uploads/`. Essa pasta não é versionada. O envio é
+e salva as imagens em `server/uploads/` quando `UPLOAD_STORAGE=local` (padrão).
+Com `UPLOAD_STORAGE=supabase`, salva no bucket configurado e retorna uma URL
+HTTPS pública. Veja o [guia de hospedagem gratuita](hosting-free.md) para configurar
+o armazenamento remoto. A chave secreta fica somente no servidor.
+Essa pasta local não é versionada. O envio é
 limitado a 30 tentativas por usuário por hora. SVG não é aceito.
 
 Para alterar a pasta, configure `UPLOAD_DIR` em `server/.env`. Caminhos relativos

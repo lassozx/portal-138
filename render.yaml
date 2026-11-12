@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: portal-138
+    runtime: node
+    plan: free
+    region: virginia
+    branch: main
+    autoDeployTrigger: checksPass
+    buildCommand: bash scripts/render-build.sh
+    startCommand: npm --prefix server run start:prod
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.19.0
+      - key: NODE_ENV
+        value: production
+      - key: SERVE_CLIENT
+        value: "true"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: UPLOAD_STORAGE
+        value: supabase
+      - key: SUPABASE_STORAGE_BUCKET
+        value: portal-capas
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1h
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL_CA
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false

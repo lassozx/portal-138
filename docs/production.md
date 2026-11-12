@@ -10,6 +10,10 @@ ele não precisa ficar aberto em produção.
 Este guia prepara o projeto. A contratação da hospedagem, o domínio, o HTTPS e
 a configuração dos volumes persistentes dependem do provedor escolhido.
 
+Para começar nos planos gratuitos de Render e Supabase, siga o
+[guia específico](hosting-free.md). Nesse caso as imagens ficam no Supabase
+Storage, pois o Render gratuito não oferece disco persistente.
+
 ## Conferir o modo de produção no computador
 
 Mantenha o `server/.env` local já configurado. Pare a API de desenvolvimento com
@@ -100,6 +104,11 @@ estar disponíveis no runtime. Dependências usadas ao iniciar a API, incluindo
 | `JWT_SECRET` | Segredo exclusivo desse ambiente, com pelo menos 32 caracteres. |
 | `JWT_EXPIRES_IN` | Duração da sessão; padrão `1h`. |
 | `NODE_ENV` | `production` no servidor publicado. |
+| `UPLOAD_STORAGE` | `local` (padrão) para disco persistente ou `supabase` para armazenamento externo. |
+| `DATABASE_SSL_CA` | Certificado CA PEM do banco; quando informado, habilita TLS com verificação estrita na API e no Prisma CLI. |
+| `SUPABASE_URL` | Origem HTTPS do projeto em `supabase.co`, quando usar armazenamento Supabase. |
+| `SUPABASE_SECRET_KEY` | Chave secreta `sb_secret_...`, exclusiva do servidor. Não usar prefixo `VITE_`. |
+| `SUPABASE_STORAGE_BUCKET` | Bucket público das capas; padrão `portal-capas`. |
 | `PORT` | Porta HTTP da aplicação; padrão `3000`, ou a porta fornecida pela hospedagem. |
 | `SERVE_CLIENT` | `true` entrega o site compilado junto à API; é o padrão quando `NODE_ENV=production`. Use `false` para hospedar o cliente separadamente. |
 | `CLIENT_DIST_DIR` | Pasta do build, relativa a `server` ou absoluta; padrão `../client/dist`. |
